@@ -1,0 +1,10 @@
+const MOCK_PRODUCTS = [
+  { id: 1, name: "Camiseta Básica de Algodón", price: 15.99, image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60", description: "Camiseta 100% algodón, súper suave y cómoda para el día a día. Ajuste perfecto y costuras reforzadas." },
+  { id: 2, name: "Zapatillas Urbanas Clásicas", price: 45.00, image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60", description: "Zapatillas de estilo urbano con suela antideslizante. Ideales para caminar largas distancias con estilo." },
+  { id: 3, name: "Mochila Impermeable", price: 32.50, image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60", description: "Mochila resistente al agua con compartimento para laptop de hasta 15 pulgadas. Múltiples bolsillos organizadores." },
+  { id: 4, name: "Reloj Minimalista", price: 28.99, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60", description: "Reloj de pulsera con diseño minimalista, correa de cuero sintético y resistente a salpicaduras." },
+  { id: 5, name: "Gafas de Sol Vintage", price: 12.00, image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60", description: "Gafas de sol con protección UV400. Marco ligero y diseño retro que combina con todo." },
+  { id: 6, name: "Auriculares Inalámbricos", price: 55.00, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60", description: "Auriculares con cancelación de ruido activa, batería de larga duración y estuche de carga rápida." },
+];
+
+export default MOCK_PRODUCTS;

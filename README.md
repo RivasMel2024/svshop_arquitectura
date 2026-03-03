@@ -160,5 +160,3 @@ Estas quedan registradas como parte del diseño del proyecto:
 - Envío de correo de confirmación de orden (CU-11 completo con SMTP)
 
 ---
-
-¿Quieres que proceda ahora a crear los archivos base del proyecto con toda esta información incorporada?

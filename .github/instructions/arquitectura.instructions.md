@@ -17,7 +17,7 @@ que DEBES respetar en todo momento.
 - Hash de contraseñas: bcrypt
 
 ## BASES DE DATOS
-- svshop_main (monolito): colecciones → users, products, carts, facturas
+- svshop_main (monolito modular): colecciones → users, products, carts, invoices
 - svshop_orders (microservicio): colecciones → orders ÚNICAMENTE
 
 ## ESTRUCTURA DE CARPETAS (monorepo)
@@ -55,7 +55,7 @@ No pongas lógica de negocio en controllers ni en routes.
   CONSUMIDOR_FINAL o CREDITO_FISCAL
 - Tokenización de datos de tarjeta: solo hash con bcrypt, sin almacenar datos raw
 - Registro de auditoría en módulos de users y products
-- El envío de correo de confirmación de orden se implementa AL FINAL
+- El envío de correo de confirmación de orden se implementa AL FINAL DEL CHECKOUT (baja prioridad)
 
 ## LO QUE NO SE IMPLEMENTA EN ESTE MVP
 - Notificaciones (email/SMS masivos)
@@ -66,17 +66,10 @@ No pongas lógica de negocio en controllers ni en routes.
 - Envío y logística
 - Reportes contables avanzados
 
-## MÉTRICAS Y SLOs
-- Tiempo de respuesta catálogo: p95 < 400ms
-- Tiempo de respuesta registro de orden: p95 < 600ms
-- Disponibilidad mensual: >= 99%
-- Tasa de errores HTTP 5xx en checkout: < 0.1%
-- 0% de discrepancia entre precio en carrito y precio en factura final
-
 ## SEGURIDAD
 - HTTPS obligatorio
 - JWT en header Authorization: Bearer <token>
-- Limitar intentos de login (bloqueo temporal tras 5 intentos fallidos)
+- Limitar intentos de login (bloqueo temporal tras 3 intentos fallidos)
 - Validar tipos y tamaños de inputs en backend
 - Encriptar datos sensibles en BD
 
@@ -92,7 +85,7 @@ No pongas lógica de negocio en controllers ni en routes.
 | **P2** | Alisson y Fiore | Frontend | Auth (login/registro), vistas de administrador y vendedor (dashboards, CRUD, gráfica) |
 | **P3** | Melisa | Backend | Módulos `auth` y `users` — registro, login, JWT, roles, CRUD de usuarios, svshop_main |
 | **P4** | Diego | Backend | Módulos `products` y `cart` — catálogo, filtros, paginación, imágenes base64, stock, auditoría |
-| **P5** | Carlos | Backend | Módulo `facturas` + Microservicio de órdenes completo, svshop_orders |
+| **P5** | Carlos | Backend | Módulo `invoices` + Microservicio de órdenes completo, svshop_orders |
 
 ---
 
@@ -104,7 +97,7 @@ Contiene las siguientes colecciones:
 - `users`
 - `products`
 - `carts`
-- `facturas`
+- `invoices`
 
 ### `svshop_orders` — BD del microservicio
 

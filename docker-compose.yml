@@ -1,0 +1,44 @@
+services:
+
+  svshop-frontend:
+    build:
+      context: ./SvShop
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    container_name: svshop-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - svshop-backend
+    restart: unless-stopped
+    networks:
+      - svshop-network
+
+  svshop-backend:
+    build:
+      context: ./svshop-backend
+      dockerfile: Dockerfile
+    container_name: svshop-backend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - svshop-orders-service
+    restart: unless-stopped
+    networks:
+      - svshop-network
+
+  svshop-orders-service:
+    build:
+      context: ./svshop-orders-service
+      dockerfile: Dockerfile
+    container_name: svshop-orders-service
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    networks:
+      - svshop-network
+
+networks:
+  svshop-network:
+    driver: bridge

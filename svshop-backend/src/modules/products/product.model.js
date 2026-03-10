@@ -72,4 +72,9 @@ productSchema.index({ precio: 1 });
 productSchema.index({ disponible: 1 });
 productSchema.index({ vendedor: 1 });
 
+// Lógica de dominio mínima relacionada con stock
+productSchema.methods.hayStockSuficiente = function (cantidadRequerida) {
+  return this.stock >= cantidadRequerida;
+};
+
 module.exports = mongoose.model('Product', productSchema);

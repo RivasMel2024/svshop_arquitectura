@@ -3,35 +3,46 @@
  * Responsabilidad: Recibir peticiones HTTP, validar entrada, delegar al servicio
  */
 
+
 const invoiceService = require('./invoice.service');
 
-const createInvoice = async (req, res, next) => {
+const createInvoice = async (req, res) => {
   try {
-    // TODO: Crear factura a partir del checkout
-    // TODO: Validar tipo de documento (CONSUMIDOR_FINAL o CREDITO_FISCAL)
-    res.status(501).json({ message: 'Not implemented' });
+    const invoice = await invoiceService.create(req.body);
+    res.status(201).json(invoice)
   } catch (error) {
-    next(error);
+    res.status(400).json({ message: error.message });
   }
 };
 
-const getInvoiceById = async (req, res, next) => {
+const getInvoiceById = async (req, res) => {
   try {
-    // TODO: Obtener factura por ID
-    res.status(501).json({ message: 'Not implemented' });
+
+    const {id} = req.params;
+    const invoice = invoiceService.getById(id)
+
+    res.status(200).json(invoice);
+
   } catch (error) {
-    next(error);
+    res.status(400).json({ message: error.message });
   }
 };
 
-const getUserInvoices = async (req, res, next) => {
+const getUserInvoices = async (req, res) => {
   try {
-    // TODO: Obtener facturas del usuario con paginación
-    res.status(501).json({ message: 'Not implemented' });
+    const { userId } = req.params;
+    const { page, limit } = req.query;
+
+    const result = await invoiceService.getByUser(userId, {
+      page: Number(page),
+      limit: Number(limit)
+    });
+
+    res.json(result);
   } catch (error) {
-    next(error);
+    res.status(400).json({ message: error.message });
   }
-};
+}
 
 module.exports = {
   createInvoice,

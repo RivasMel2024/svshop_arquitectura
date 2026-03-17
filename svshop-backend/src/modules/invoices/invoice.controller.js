@@ -19,7 +19,7 @@ const getInvoiceById = async (req, res) => {
   try {
 
     const {id} = req.params;
-    const invoice = invoiceService.getById(id)
+    const invoice = await invoiceService.getById(id)
 
     res.status(200).json(invoice);
 

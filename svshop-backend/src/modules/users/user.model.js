@@ -31,6 +31,15 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  failed_login_attempts: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  locked_until: {
+    type: Date,
+    default: null
+  },
   // Auditoría
   creadoPor: {
     type: mongoose.Schema.Types.ObjectId,

@@ -40,6 +40,10 @@ const config = {
   
   // Bcrypt
   BCRYPT_SALT_ROUNDS: parseInt(process.env.BCRYPT_SALT_ROUNDS) || 10,
+
+  // Seguridad de login
+  LOGIN_MAX_ATTEMPTS: parseInt(process.env.LOGIN_MAX_ATTEMPTS) || 3,
+  LOGIN_LOCK_MINUTES: parseInt(process.env.LOGIN_LOCK_MINUTES) || 15,
   
   // Límites
   MAX_IMAGE_SIZE_MB: parseInt(process.env.MAX_IMAGE_SIZE_MB) || 3,

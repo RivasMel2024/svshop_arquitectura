@@ -2,7 +2,7 @@ import { ArrowRight, ShoppingCart, Truck, ShieldCheck, Clock } from "lucide-reac
 import MOCK_PRODUCTS from "../data/products"
 import Footer from "../components/Footer"
 
-function Home({ navigate, onAddToCart }) {
+function Home({ navigate, onAddToCart, onViewProduct }) {
 
   const categories = [
     { name: "Ropa", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" },
@@ -71,7 +71,7 @@ function Home({ navigate, onAddToCart }) {
             <div 
               key={product.id} 
               className="bg-white rounded-3xl shadow-sm hover:shadow-xl transition overflow-hidden flex flex-col border border-gray-100 cursor-pointer"
-              onClick={() => navigate('product')}
+              onClick={() => onViewProduct(product)}
             >
               <div className="h-64 overflow-hidden bg-gray-100">
                 <img 
@@ -81,10 +81,17 @@ function Home({ navigate, onAddToCart }) {
                 />
               </div>
 
-              <div className="p-6 flex flex-col flex-grow">
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                  {product.name}
-                </h3>
+              <div className="p-6 flex flex-col grow">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {product.name}
+                  </h3>
+                  <span className={`text-xs font-bold px-2 py-1 rounded whitespace-nowrap ml-2 ${
+                    product.stock > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                  }`}>
+                    {product.stock > 0 ? `${product.stock}` : "Agotado"}
+                  </span>
+                </div>
 
                 <p className="text-2xl font-black text-[#CB6045] mb-6">
                   ${product.price.toFixed(2)}
@@ -95,7 +102,12 @@ function Home({ navigate, onAddToCart }) {
                     e.stopPropagation()
                     onAddToCart(product)
                   }}
-                  className="w-full bg-[#FDE4DD] text-[#A04A34] py-3.5 rounded-xl font-bold hover:bg-[#F57656] hover:text-white transition flex justify-center items-center gap-2"
+                  disabled={product.stock === 0}
+                  className={`w-full py-3.5 rounded-xl font-bold flex justify-center items-center gap-2 transition ${
+                    product.stock > 0
+                      ? "bg-[#FDE4DD] text-[#A04A34] hover:bg-[#F57656] hover:text-white"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
                 >
                   <ShoppingCart className="h-5 w-5" />
                   Agregar al carrito

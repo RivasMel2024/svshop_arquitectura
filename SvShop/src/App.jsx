@@ -24,7 +24,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(true) // Cambia a false o true para simular no autenticado
 
   // 🔹 Navegación protegida
-  const navigate = (route) => {
+  const navigate = (route, payload = null) => {
     if (
       !isAuthenticated &&
       route !== "login" &&
@@ -33,6 +33,10 @@ function App() {
     ) {
       toast.error("Debes iniciar sesión primero")
       return
+    }
+
+    if (route === "product" && payload) {
+      setSelectedProduct(payload)
     }
 
     setCurrentRoute(route)

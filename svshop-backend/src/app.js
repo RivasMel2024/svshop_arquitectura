@@ -15,6 +15,7 @@ const userRoutes = require('./modules/users/user.routes');
 const productRoutes = require('./modules/products/product.routes');
 const cartRoutes = require('./modules/cart/cart.routes');
 const invoiceRoutes = require('./modules/invoices/invoice.routes');
+const checkoutRoutes = require('./modules/checkout/checkout.routes');
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/checkout', checkoutRoutes);
 
 // Ruta 404
 app.use((req, res) => {

@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const orderRoutes = require('./modules/orders/order.routes');
 
 // Cargar variables de entorno
 dotenv.config();
@@ -35,6 +36,9 @@ app.get('/', (req, res) => {
   res.json({ 
     message: 'SvShop Orders Microservice',
     version: '1.0.0'
+
+  // Montar rutas de órdenes
+  app.use('/api/orders', orderRoutes);
   });
 });
 

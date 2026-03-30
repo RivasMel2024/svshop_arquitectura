@@ -55,12 +55,12 @@ const getByUser = async (userId, page = 1, limit = 10) => {
             throw new Error("User not found");
         }
 
-        const orders = await Order.find({ userId })
+        const orders = await Order.find({ clienteId: userId })
             .skip(skip)
             .limit(limit)
             .sort({ createdAt: -1 });
 
-        const total = await Order.countDocuments({ userId });
+        const total = await Order.countDocuments({ clienteId: userId });
 
         return {
             data: orders,

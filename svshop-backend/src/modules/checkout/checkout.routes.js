@@ -5,10 +5,12 @@
  */
 
 const express = require('express');
+const checkoutController = require('./checkout.controller');
+const { verifyToken } = require('../../middlewares/auth.middleware');
 const router = express.Router();
 
-// Aquí se agregarán las rutas reales de checkout (por ejemplo, POST /)
-// cuando el módulo esté implementado.
+// POST /api/checkout - Procesar checkout y crear orden
+router.post('/', verifyToken, checkoutController.processCheckout);
 
 module.exports = router;
 

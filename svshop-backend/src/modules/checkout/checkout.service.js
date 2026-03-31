@@ -24,7 +24,7 @@ const createError = (message, statusCode) => {
 const processCheckout = async (userId, checkoutData, token) => {
   // 1. Obtener carrito del usuario
   const cart = await Cart.findOne({ usuario: userId })
-    .populate('items.producto', 'nombre precio stock');
+    .populate('items.producto', 'nombre precio stock vendedor');
 
   if (!cart) {
     throw createError('Carrito no encontrado', 404);
@@ -54,19 +54,22 @@ const processCheckout = async (userId, checkoutData, token) => {
 
   let invoice;
   try {
+    const invoiceItems = cart.items.map((item) => ({
+      producto: item.producto._id,
+      nombreProducto: item.producto.nombre,
+      cantidad: item.cantidad,
+      precioUnitario: item.precioUnitario,
+      subtotal: item.cantidad * item.precioUnitario
+    }));
+
     invoice = await Invoice.create({
       usuario: userId,
       tipoDocumento,
-      items: cart.items.map(item => ({
-        producto: item.producto._id,
-        nombre: item.producto.nombre,
-        cantidad: item.cantidad,
-        precio: item.precioUnitario
-      })),
+      items: invoiceItems,
       subtotal: subTotal,
       iva: subTotal * IVA,
       total: total,
-      datosFacturación
+      datosFacturacion: datosFacturación
     });
   } catch (error) {
     throw createError(`Error creando invoice: ${error.message}`, 500);
@@ -75,6 +78,15 @@ const processCheckout = async (userId, checkoutData, token) => {
   // 3. Crear orden en microservicio de órdenes
   let order;
   try {
+    const orderItems = cart.items.map((item) => ({
+      producto: item.producto._id,
+      vendedorId: item.producto.vendedor,
+      nombreProducto: item.producto.nombre,
+      cantidad: item.cantidad,
+      precioUnitario: item.precioUnitario,
+      subtotal: item.cantidad * item.precioUnitario
+    }));
+
     const response = await fetch(`${config.ORDERS_SERVICE_URL}/api/orders`, {
       method: 'POST',
       headers: {
@@ -82,18 +94,27 @@ const processCheckout = async (userId, checkoutData, token) => {
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
-        usuario: userId,
-        invoiceId: invoice._id.toString(),
-        items: cart.items.map(item => ({
-          producto: item.producto._id,
-          nombre: item.producto.nombre,
-          cantidad: item.cantidad,
-          precio: item.precioUnitario
-        })),
-        subtotal: subTotal,
-        iva: subTotal * IVA,
-        total: total,
-        datosFacturación
+        facturaId: invoice._id.toString(),
+        items: orderItems,
+        total,
+        totales: {
+          subtotal: subTotal,
+          impuestos: subTotal * IVA,
+          costoEnvio: 0,
+          descuentos: 0,
+          total
+        },
+        direccionEnvio: {
+          calle: datosFacturación.direccion || 'No especificada',
+          ciudad: datosFacturación.ciudad || 'No especificada',
+          departamento: datosFacturación.departamento || 'No especificado',
+          telefono: datosFacturación.telefono || 'No especificado'
+        },
+        metodoEnvio: {
+          tipo: 'ESTANDAR',
+          costo: 0,
+          tiempoEstimado: 'N/A'
+        }
       })
     });
 
@@ -134,10 +155,10 @@ const processCheckout = async (userId, checkoutData, token) => {
     },
     order: {
       _id: order._id || order.id,
-      usuario: order.usuario,
-      invoiceId: order.invoiceId,
-      estado: order.estado || 'CREADA',
-      total: order.total,
+      usuario: order.clienteId || userId,
+      invoiceId: order.facturaId || invoice._id,
+      estado: order.estado || 'PENDIENTE',
+      total: (order.totales && order.totales.total) || total,
       createdAt: order.createdAt
     },
     message: 'Checkout procesado exitosamente'

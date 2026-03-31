@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('./order.controller')
-const { verifyToken } = require('../../middlewares/auth.middleware');
+const { verifyToken } = require('../../middleware/auth.middleware');
+const { checkRole } = require('../../middleware/role.middleware');
 
 
 // POST /api/orders -- Crear orden
@@ -14,7 +15,7 @@ router.get('/:id', verifyToken, orderController.getOrderById);
 router.get('/user/:userId', verifyToken, orderController.getUserOrders);
 
 // PATCH /api/orders/status/id -- Actualizar estado de orden
-router.patch('/status/:id', verifyToken, orderController.updateOrderStatus);
+router.patch('/status/:id', verifyToken, checkRole(['VENDEDOR']), orderController.updateOrderStatus);
 
 
 module.exports = router;

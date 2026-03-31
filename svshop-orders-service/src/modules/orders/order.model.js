@@ -17,6 +17,10 @@ const orderItemSchema = new mongoose.Schema({
     ref: 'Product',
     required: true
   },
+  vendedorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true
+  },
   nombreProducto: String,
   cantidad: {
     type: Number,

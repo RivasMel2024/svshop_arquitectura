@@ -91,11 +91,6 @@ const getUserOrders = async (req, res) => {
 //actualiza estado de una orden
 const updateOrderStatus = async (req, res) => {
   try {
-    // Validar que el usuario esté autenticado
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: 'Usuario no autenticado' });
-    }
-
     const { id } = req.params;
     const { newState, comment } = req.body;
 
@@ -107,12 +102,18 @@ const updateOrderStatus = async (req, res) => {
       return res.status(400).json({ message: 'newState es requerido' });
     }
 
-    // Obtener la orden para verificar que pertenece al usuario
-    const orderService = require('./order.service');
     const order = await orderService.getById(id);
 
-    if (order.clienteId.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'No tienes permiso para actualizar esta orden' });
+    if (!order.items || order.items.length === 0) {
+      return res.status(400).json({ message: 'La orden no tiene items para validar vendedor propietario' });
+    }
+
+    const sellerOwnsAllItems = order.items.every(
+      (item) => item.vendedorId && item.vendedorId.toString() === req.user.id
+    );
+
+    if (!sellerOwnsAllItems) {
+      return res.status(403).json({ message: 'Solo el vendedor propietario de los productos puede actualizar esta orden' });
     }
 
     const state = await orderService.updateOrderStatus(id, newState, comment);

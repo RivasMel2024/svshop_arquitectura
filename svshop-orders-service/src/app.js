@@ -35,12 +35,12 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({ 
     message: 'SvShop Orders Microservice',
-    version: '1.0.0'
-
-  // Montar rutas de órdenes
-  app.use('/api/orders', orderRoutes);
+    version: '1.0.0',
   });
 });
+
+// Montar rutas de órdenes
+app.use('/api/orders', orderRoutes);
 
 // Manejo de errores global
 app.use((err, req, res, next) => {

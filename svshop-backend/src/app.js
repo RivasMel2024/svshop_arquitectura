@@ -24,8 +24,8 @@ connectDB();
 
 // Middlewares globales
 app.use(cors());
-app.use(express.json({ limit: '5mb' })); // Permitir JSON con imágenes base64
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' })); // Límite técnico; el módulo products valida 3MB de imagen
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check
 app.get('/health', (req, res) => {

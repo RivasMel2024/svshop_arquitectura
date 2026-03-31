@@ -32,6 +32,14 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
+  // Payload demasiado grande (body-parser)
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({
+      error: 'PayloadTooLargeError',
+      message: 'El body enviado es demasiado grande. Para imágenes, usa máximo 3MB por archivo.'
+    });
+  }
+
   // Error por defecto
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Error interno del servidor';

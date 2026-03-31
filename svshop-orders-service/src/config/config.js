@@ -3,7 +3,15 @@
  * Carga variables de entorno del archivo .env
  */
 
-require('dotenv').config();
+const dotenv = require('dotenv');
+const path = require('path');
+
+const environment = process.env.NODE_ENV || 'development';
+
+// En desarrollo cargar .env.development (Mongo local), en producción .env
+const envFile = environment === 'development' ? '.env.development' : '.env';
+const envPath = path.resolve(__dirname, '../../', envFile);
+dotenv.config({ path: envPath });
 
 const config = {
   NODE_ENV: process.env.NODE_ENV || 'development',

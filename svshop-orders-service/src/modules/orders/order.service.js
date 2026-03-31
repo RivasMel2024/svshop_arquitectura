@@ -1,5 +1,4 @@
 const Order = require('./order.model');
-const User = require('../users/user.model')
 const States = require('../orders/orderStates')
 
 //Verifica los datos de la orden utilizando el modelo y la guarda a la BD
@@ -36,7 +35,7 @@ const getById = async (orderId) => {
 
 };
 
-//Verifica que existe un usuario con el Id que se busca y se retornan sus ordenes utilizando paginacion
+//Retorna órdenes por usuario utilizando paginación
 const getByUser = async (userId, page = 1, limit = 10) => {
 
     try{
@@ -48,12 +47,6 @@ const getByUser = async (userId, page = 1, limit = 10) => {
 
         //La cantidad de datos que se tienen que saltar basado en el limite y pagina
         const skip = (page - 1) * limit;
-
-        const user = await User.findById(userId);
-
-        if (!user) {
-            throw new Error("User not found");
-        }
 
         const orders = await Order.find({ clienteId: userId })
             .skip(skip)

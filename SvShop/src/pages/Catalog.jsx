@@ -1,33 +1,88 @@
+import { useState } from "react"
 import MOCK_PRODUCTS from "../data/products"
 
-function Catalog({ navigate, onAddToCart, showToast }) {
+function Catalog({ navigate, onAddToCart, onViewProduct }) {
+  const [selectedCategory, setSelectedCategory] = useState(null)
+  
+  // Obtener categorías únicas ordenadas alfabéticamente
+  const categories = ["Todas las categorías", ...Array.from(new Set(MOCK_PRODUCTS.map(p => p.category))).sort()]
+  
+  // Filtrar productos por categoría seleccionada
+  const filteredProducts = selectedCategory && selectedCategory !== "Todas las categorías"
+    ? MOCK_PRODUCTS.filter(p => p.category === selectedCategory)
+    : MOCK_PRODUCTS
+
   return (
     <div className="min-h-screen bg-[#FFF5F2] py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-black mb-8 border-b-2 border-[#FCD6CC] pb-4">Nuestro Catálogo</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {MOCK_PRODUCTS.map((product) => (
-            <div key={product.id} className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden group cursor-pointer" onClick={() => navigate('product', product.id)}>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-black mb-6 border-b-2 border-[#FCD6CC] pb-4">Nuestro Catálogo</h1>
+          
+          {/* Menú de Categorías */}
+          <div className="flex flex-wrap gap-3">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat === "Todas las categorías" ? null : cat)}
+                className={`px-6 py-2 rounded-full font-semibold transition ${
+                  (selectedCategory === null && cat === "Todas las categorías") || selectedCategory === cat
+                    ? "bg-[#F57656] text-white"
+                    : "bg-[#FDE4DD] text-[#A04A34] hover:bg-[#F57656] hover:text-white"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Mostrar mensaje si no hay productos en la categoría */}
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-xl text-gray-600 mb-6">No hay productos disponibles en esta categoría</p>
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className="bg-[#F57656] text-white px-6 py-3 rounded-full font-semibold hover:bg-[#CB6045] transition"
+            >
+              Ver todos los productos
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredProducts.map((product) => (
+            <div key={product.id} className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden group cursor-pointer" onClick={() => onViewProduct(product)}>
               <div className="relative h-56 overflow-hidden bg-gray-100">
                 <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
               <div className="p-5">
-                <h3 className="text-lg font-semibold text-gray-800 mb-1 truncate">{product.name}</h3>
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-lg font-semibold text-gray-800 truncate flex-1">{product.name}</h3>
+                  <span className={`text-xs font-bold px-2 py-1 rounded ${
+                    product.stock > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                  }`}>
+                    {product.stock > 0 ? `${product.stock} en stock` : "Agotado"}
+                  </span>
+                </div>
                 <p className="text-xl font-bold text-[#CB6045] mb-4">${product.price.toFixed(2)}</p>
-                <button 
+                <button
+                  disabled={product.stock === 0} 
                   onClick={(e) => {
                     e.stopPropagation();
                     onAddToCart(product);
-                    showToast("Producto agregado al carrito");
                   }}
-                  className="w-full bg-[#FDE4DD] text-[#A04A34] py-2 rounded-lg font-medium hover:bg-[#F57656] hover:text-white transition"
+                  className={`w-full py-2 rounded-lg font-medium transition ${
+                    product.stock > 0
+                      ? "bg-[#FDE4DD] text-[#A04A34] hover:bg-[#F57656] hover:text-white"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
                 >
                   Agregar al Carrito
                 </button>
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

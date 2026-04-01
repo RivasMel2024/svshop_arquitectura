@@ -1,24 +1,15 @@
 import { useState } from "react"
 import { User, CreditCard, Package, X } from "lucide-react"
 
-function Account() {
+const ORDER_STATUS_LABEL = {
+  PENDIENTE: "Pendiente",
+  EN_CAMINO: "En camino",
+  RECIBIDA: "Recibida",
+  CANCELADA: "Cancelada"
+}
 
-  const [user] = useState({
-    name: "Allison Martínez",
-    email: "allison@email.com",
-    address: "San Salvador, El Salvador",
-    memberSince: "2026-02-15",
-    paymentMethods: [
-      { id: 1, brand: "Visa", last4: "4242", exp: "08/28" },
-      { id: 2, brand: "Mastercard", last4: "8899", exp: "01/27" }
-    ],
-    orders: [
-      { id: 1024, total: 89.99, status: "Entregado" },
-      { id: 1025, total: 45.00, status: "En camino" }
-    ]
-  })
-
-  const [cards, setCards] = useState(user.paymentMethods)
+function Account({ user, orders = [], ordersLoading = false, ordersError = "" }) {
+  const [cards, setCards] = useState([])
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const [newCard, setNewCard] = useState({
@@ -28,7 +19,9 @@ function Account() {
   })
 
   const formatDate = (dateString) => {
+    if (!dateString) return "No disponible"
     const date = new Date(dateString)
+    if (Number.isNaN(date.getTime())) return "No disponible"
     return date.toLocaleDateString("es-ES", {
       month: "long",
       year: "numeric"
@@ -61,6 +54,30 @@ function Account() {
     setIsModalOpen(false)
   }
 
+  const formatMoney = (value) => {
+    const amount = Number(value || 0)
+    return amount.toFixed(2)
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#FFF5F2] py-10">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="bg-white rounded-3xl p-10 text-center shadow-sm">
+            <h1 className="text-3xl font-bold text-black mb-4">Mi Cuenta</h1>
+            <p className="text-gray-700 mb-6">No hay sesión activa. Inicia sesión para ver tu perfil.</p>
+            <button
+              onClick={() => navigate("login")}
+              className="bg-[#F57656] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#CB6045] transition"
+            >
+              Ir a iniciar sesión
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#FFF5F2] py-10">
       <div className="max-w-6xl mx-auto px-4 space-y-10">
@@ -85,7 +102,7 @@ function Account() {
           <div className="grid md:grid-cols-2 gap-6 text-gray-700">
             <div>
               <p className="text-sm text-gray-500">Nombre</p>
-              <p className="font-semibold">{user.name}</p>
+              <p className="font-semibold">{user.nombre}</p>
             </div>
 
             <div>
@@ -95,13 +112,13 @@ function Account() {
 
             <div>
               <p className="text-sm text-gray-500">Dirección</p>
-              <p className="font-semibold">{user.address}</p>
+              <p className="font-semibold">No registrada</p>
             </div>
 
             <div>
               <p className="text-sm text-gray-500">Miembro desde</p>
               <p className="font-semibold capitalize">
-                {formatDate(user.memberSince)}
+                {formatDate(user.createdAt)}
               </p>
             </div>
           </div>
@@ -135,6 +152,12 @@ function Account() {
               </div>
             ))}
 
+            {cards.length === 0 && (
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                <p className="text-sm text-gray-600">Aún no tienes métodos de pago guardados.</p>
+              </div>
+            )}
+
             <button
               onClick={() => setIsModalOpen(true)}
               className="mt-4 w-full border-2 border-dashed border-[#CB6045] text-[#CB6045] py-3 rounded-xl font-semibold hover:bg-[#CB6045] hover:text-white transition"
@@ -152,27 +175,45 @@ function Account() {
           </h2>
 
           <div className="space-y-4">
-            {user.orders.map((order) => (
+            {ordersLoading && (
+              <div className="flex justify-between items-center bg-[#FFF5F2] p-4 rounded-xl">
+                <p className="text-sm text-gray-600">Cargando historial...</p>
+              </div>
+            )}
+
+            {!ordersLoading && ordersError && (
+              <div className="flex justify-between items-center bg-[#FFF5F2] p-4 rounded-xl">
+                <p className="text-sm text-red-600">{ordersError}</p>
+              </div>
+            )}
+
+            {!ordersLoading && !ordersError && orders.length === 0 && (
+              <div className="flex justify-between items-center bg-[#FFF5F2] p-4 rounded-xl">
+                <div>
+                  <p className="font-semibold">Aún no tienes pedidos</p>
+                  <p className="text-sm text-gray-500">Cuando hagas tu primera compra, aparecerá aquí.</p>
+                </div>
+              </div>
+            )}
+
+            {!ordersLoading && !ordersError && orders.map((order) => (
               <div
-                key={order.id}
+                key={order._id}
                 className="flex justify-between items-center bg-[#FFF5F2] p-4 rounded-xl"
               >
                 <div>
-                  <p className="font-semibold">
-                    Pedido #{order.id}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    ${order.total.toFixed(2)}
-                  </p>
+                  <p className="font-semibold">Pedido #{order.numeroOrden || order._id}</p>
+                  <p className="text-sm text-gray-500">${formatMoney(order?.totales?.total)}</p>
                 </div>
 
-                <span className={`text-sm font-semibold px-4 py-1 rounded-full
-                  ${order.status === "Entregado"
+                <span className={`text-sm font-semibold px-4 py-1 rounded-full ${
+                  order.estado === "RECIBIDA"
                     ? "bg-green-100 text-green-700"
+                    : order.estado === "CANCELADA"
+                    ? "bg-red-100 text-red-700"
                     : "bg-yellow-100 text-yellow-700"
-                  }`}
-                >
-                  {order.status}
+                }`}>
+                  {ORDER_STATUS_LABEL[order.estado] || order.estado || "Pendiente"}
                 </span>
               </div>
             ))}

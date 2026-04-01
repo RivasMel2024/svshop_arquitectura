@@ -1,26 +1,39 @@
 import { useState } from "react"
 import { ArrowLeft } from "lucide-react"
+import toast from "react-hot-toast"
 
-function Register({ navigate, showToast }) {
+function Register({ navigate, onRegister }) {
   const countries = [
     { name: "El Salvador", code: "+503" }, { name: "Guatemala", code: "+502" }, { name: "Honduras", code: "+504" },
     { name: "Costa Rica", code: "+506" }, { name: "México", code: "+52" }, { name: "Colombia", code: "+57" }
   ];
 
-  const [form, setForm] = useState({ fullName: "", email: "", password: "", country: "", phone: "" });
-  const selectedCountry = countries.find((c) => c.name === form.country);
+  const [form, setForm] = useState({ fullName: "", email: "", password: "", country: "", phone: "" })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const selectedCountry = countries.find((c) => c.name === form.country)
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault()
     if (!form.fullName || !form.email || !form.password || !form.country || !form.phone) {
-      showToast("Completa todos los campos", "error");
-      return;
+      toast.error("Completa todos los campos")
+      return
     }
-    showToast("Cuenta creada con éxito 🎉", "success");
-    navigate('login');
-  };
+
+    try {
+      setIsSubmitting(true)
+      await onRegister({
+        nombre: form.fullName,
+        email: form.email,
+        password: form.password
+      })
+    } catch (error) {
+      toast.error(error.message || "No se pudo crear la cuenta")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F57656] p-8">
@@ -59,7 +72,13 @@ function Register({ navigate, showToast }) {
                   <input type="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="Tu número" className="w-full px-4 py-3 rounded-r-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#7FEEF0]" />
                 </div>
               </div>
-              <button type="submit" className="w-full py-3 rounded-lg bg-[#F57656] text-white font-semibold hover:bg-[#CB6045] transition">Crear cuenta</button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-3 rounded-lg bg-[#F57656] text-white font-semibold hover:bg-[#CB6045] transition disabled:opacity-70"
+              >
+                {isSubmitting ? "Creando cuenta..." : "Crear cuenta"}
+              </button>
             </form>
           </div>
           <div className="flex flex-col items-center justify-center text-center">
@@ -68,7 +87,7 @@ function Register({ navigate, showToast }) {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 export default Register

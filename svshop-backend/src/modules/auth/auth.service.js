@@ -109,7 +109,22 @@ const loginUser = async (email, password) => {
   };
 };
 
+const getUserProfile = async (userId) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw createError('Usuario no encontrado', 404);
+  }
+
+  if (!user.activo) {
+    throw createError('Usuario inactivo', 403);
+  }
+
+  return buildSafeUser(user);
+};
+
 module.exports = {
   registerUser,
-  loginUser
+  loginUser,
+  getUserProfile
 };

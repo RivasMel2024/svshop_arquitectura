@@ -15,13 +15,13 @@ router.get('/', productController.getAllProducts);
 // GET /api/products/:id - Obtener producto por ID (público)
 router.get('/:id', productController.getProductById);
 
-// POST /api/products - Crear producto (solo vendedor y admin)
-router.post('/', verifyToken, checkRole(['VENDEDOR', 'ADMINISTRADOR']), productController.createProduct);
+// POST /api/products - Crear producto (solo vendedor)
+router.post('/', verifyToken, checkRole(['VENDEDOR']), productController.createProduct);
 
 // PUT /api/products/:id - Actualizar producto (solo vendedor y admin)
 router.put('/:id', verifyToken, checkRole(['VENDEDOR', 'ADMINISTRADOR']), productController.updateProduct);
 
-// DELETE /api/products/:id - Eliminar producto (solo admin)
-router.delete('/:id', verifyToken, checkRole(['ADMINISTRADOR']), productController.deleteProduct);
+// DELETE /api/products/:id - Deshabilitar producto (vendedor/admin, vendedor solo los suyos)
+router.delete('/:id', verifyToken, checkRole(['VENDEDOR', 'ADMINISTRADOR']), productController.deleteProduct);
 
 module.exports = router;

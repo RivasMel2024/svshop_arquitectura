@@ -1,4 +1,5 @@
 const orderService = require('./order.service');
+const { sendCheckoutConfirmationEmail } = require('./order.email');
 
 
 //Crea una orden nueva
@@ -27,6 +28,17 @@ const createOrder = async (req, res) => {
     };
 
     const order = await orderService.create(orderData);
+
+    try {
+      await sendCheckoutConfirmationEmail({
+        to: req.user.email,
+        order,
+      });
+    } catch (emailError) {
+      // No bloquear checkout por fallo SMTP
+      console.warn('No se pudo enviar correo de confirmacion:', emailError.message);
+    }
+
     res.status(201).json(order);
   } catch (error) {
     const statusCode = error.statusCode || 400;
@@ -88,6 +100,29 @@ const getUserOrders = async (req, res) => {
   }
 };
 
+// Busca órdenes de un vendedor
+const getSellerOrders = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Usuario no autenticado' });
+    }
+
+    const { sellerId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    if (sellerId !== req.user.id) {
+      return res.status(403).json({ message: 'No tienes permiso para acceder órdenes de otro vendedor' });
+    }
+
+    const result = await orderService.getBySeller(sellerId, Number(page), Number(limit));
+
+    res.status(200).json(result);
+  } catch (error) {
+    const statusCode = error.statusCode || 400;
+    res.status(statusCode).json({ message: error.message });
+  }
+};
+
 //actualiza estado de una orden
 const updateOrderStatus = async (req, res) => {
   try {
@@ -128,6 +163,7 @@ module.exports = {
   createOrder,
   getOrderById,
   getUserOrders,
+  getSellerOrders,
   updateOrderStatus
 
 };

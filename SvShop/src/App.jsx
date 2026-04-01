@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Toaster } from "react-hot-toast"
 import toast from "react-hot-toast"
 
@@ -11,28 +11,167 @@ import Cart from "./pages/Cart"
 import Checkout from "./pages/Checkout"
 import OrderSuccess from "./pages/OrderSuccess"
 import Account from "./pages/Account"
+import Admin from "./pages/Admin"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
 import ForgotPassword from "./pages/ForgotPassword"
+import { getProducts } from "./services/products.api"
+import { getMyProfile, loginUser, registerUser } from "./services/auth.api"
+import { getOrdersByUser } from "./services/orders.api"
 
-import MOCK_PRODUCTS from "./data/products"
+const TOKEN_KEY = "svshop_token"
+const USER_KEY = "svshop_user"
+
+const getStoredUser = () => {
+  try {
+    const raw = localStorage.getItem(USER_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
 
 function App() {
-  const [currentRoute, setCurrentRoute] = useState("login")
+  const [authToken, setAuthToken] = useState(() => localStorage.getItem(TOKEN_KEY) || "")
+  const [currentUser, setCurrentUser] = useState(() => getStoredUser())
+  const [currentRoute, setCurrentRoute] = useState("home")
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [cartItems, setCartItems] = useState([])
-  const [isAuthenticated, setIsAuthenticated] = useState(true) // Cambia a false o true para simular no autenticado
+  const [products, setProducts] = useState([])
+  const [productsLoading, setProductsLoading] = useState(false)
+  const [productsError, setProductsError] = useState("")
+  const [orders, setOrders] = useState([])
+  const [ordersLoading, setOrdersLoading] = useState(false)
+  const [ordersError, setOrdersError] = useState("")
+  const isAuthenticated = Boolean(authToken)
+  const userRole = currentUser?.rol || currentUser?.role || ""
+  const isBackofficeUser = userRole === "ADMINISTRADOR" || userRole === "VENDEDOR"
+
+  const saveSession = (token, user) => {
+    setAuthToken(token)
+    setCurrentUser(user)
+    localStorage.setItem(TOKEN_KEY, token)
+    localStorage.setItem(USER_KEY, JSON.stringify(user))
+  }
+
+  const clearSession = () => {
+    setAuthToken("")
+    setCurrentUser(null)
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
+  }
+
+  const loadProducts = async () => {
+    try {
+      setProductsLoading(true)
+      setProductsError("")
+      const data = await getProducts({ page: 1, limit: 20 })
+      setProducts(data)
+    } catch (error) {
+      setProductsError(error.message || "No se pudo cargar el catálogo")
+    } finally {
+      setProductsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadProducts()
+  }, [])
+
+  useEffect(() => {
+    if (["home", "catalog"].includes(currentRoute)) {
+      loadProducts()
+    }
+  }, [currentRoute])
+
+  useEffect(() => {
+    const syncProfile = async () => {
+      if (!authToken) return
+
+      try {
+        const response = await getMyProfile(authToken)
+        const user = response.user
+        setCurrentUser(user)
+        localStorage.setItem(USER_KEY, JSON.stringify(user))
+      } catch (error) {
+        clearSession()
+        setCurrentRoute("login")
+        toast.error(error.message || "Tu sesión expiró. Inicia sesión nuevamente")
+      }
+    }
+
+    syncProfile()
+  }, [authToken])
+
+  useEffect(() => {
+    if (!isAuthenticated || !isBackofficeUser) return
+
+    const storeRoutes = ["home", "catalog", "product", "cart", "checkout", "success"]
+    if (storeRoutes.includes(currentRoute)) {
+      setCurrentRoute("admin")
+    }
+  }, [isAuthenticated, isBackofficeUser, currentRoute])
+
+  useEffect(() => {
+    const loadOrders = async () => {
+      if (!authToken || !currentUser?.id) {
+        setOrders([])
+        setOrdersError("")
+        return
+      }
+
+      try {
+        setOrdersLoading(true)
+        setOrdersError("")
+        const result = await getOrdersByUser({
+          userId: currentUser.id,
+          token: authToken,
+          page: 1,
+          limit: 20
+        })
+        setOrders(Array.isArray(result.data) ? result.data : [])
+      } catch (error) {
+        setOrders([])
+        setOrdersError(error.message || "No se pudo cargar el historial de pedidos")
+      } finally {
+        setOrdersLoading(false)
+      }
+    }
+
+    loadOrders()
+  }, [authToken, currentUser?.id])
 
   // 🔹 Navegación protegida
   const navigate = (route, payload = null) => {
+    const protectedRoutes = ["cart", "checkout", "account"]
+    const adminRoutes = ["admin"]
+
+    // Validar rutas que requieren autenticación
     if (
       !isAuthenticated &&
-      route !== "login" &&
-      route !== "register" &&
-      route !== "forgot"
+      protectedRoutes.includes(route)
     ) {
-      toast.error("Debes iniciar sesión primero")
+      toast.error("Debes iniciar sesión para usar carrito, pedidos y tu cuenta")
+      setCurrentRoute("login")
       return
+    }
+
+    // Validar rutas que requieren rol ADMIN o VENDEDOR
+    if (adminRoutes.includes(route)) {
+      if (!isAuthenticated) {
+        toast.error("Debes iniciar sesión para acceder al panel administrativo")
+        setCurrentRoute("login")
+        return
+      }
+
+      const userRole = currentUser?.rol || currentUser?.role || ""
+      const isAdmin = userRole === "ADMINISTRADOR" || userRole === "VENDEDOR"
+
+      if (!isAdmin) {
+        toast.error("No tienes permiso para acceder al panel administrativo")
+        setCurrentRoute("home")
+        return
+      }
     }
 
     if (route === "product" && payload) {
@@ -42,16 +181,24 @@ function App() {
     setCurrentRoute(route)
   }
 
-  // 🔹 Login simulado
-  const handleLogin = () => {
-    setIsAuthenticated(true)
-    setCurrentRoute("home")
-    toast.success("Bienvenida a SVShop ✨")
+  const handleLogin = async ({ email, password }) => {
+    const result = await loginUser({ email, password })
+    saveSession(result.token, result.user)
+    const role = result.user?.rol || result.user?.role || ""
+    const isAdminOrSeller = role === "ADMINISTRADOR" || role === "VENDEDOR"
+    setCurrentRoute(isAdminOrSeller ? "admin" : "home")
+    toast.success(`Bienvenida ${result.user.nombre} ✨`)
+  }
+
+  const handleRegister = async ({ nombre, email, password }) => {
+    await registerUser({ nombre, email, password })
+    toast.success("Cuenta creada con éxito 🎉")
+    setCurrentRoute("login")
   }
 
   // 🔹 Logout
   const handleLogout = () => {
-    setIsAuthenticated(false)
+    clearSession()
     setCartItems([])
     setCurrentRoute("login")
     toast.success("Sesión cerrada")
@@ -67,6 +214,12 @@ function App() {
   // 🔹 Agregar al carrito
   const addToCart = (product) => {
     if (!product) return
+
+    if (!isAuthenticated) {
+      toast.error("Inicia sesión o crea una cuenta para agregar al carrito")
+      setCurrentRoute("login")
+      return
+    }
 
     const existing = cartItems.find((item) => item.id === product.id)
 
@@ -108,6 +261,23 @@ function App() {
     setCartItems([])
   }
 
+  // 🔹 Refrescar órdenes después de crear una
+  const refreshOrders = async () => {
+    if (!authToken || !currentUser?.id) return
+
+    try {
+      const result = await getOrdersByUser({
+        userId: currentUser.id,
+        token: authToken,
+        page: 1,
+        limit: 20
+      })
+      setOrders(Array.isArray(result.data) ? result.data : [])
+    } catch (error) {
+      console.error("Error refrescando órdenes:", error)
+    }
+  }
+
   // 🔹 Router Manual
   const renderView = () => {
     switch (currentRoute) {
@@ -115,7 +285,7 @@ function App() {
         return <Login navigate={navigate} onLogin={handleLogin} />
 
       case "register":
-        return <Register navigate={navigate} />
+        return <Register navigate={navigate} onRegister={handleRegister} />
 
       case "forgot":
         return <ForgotPassword navigate={navigate} />
@@ -124,7 +294,9 @@ function App() {
         return (
           <Home
             navigate={navigate}
-            products={MOCK_PRODUCTS}
+            products={products}
+            loading={productsLoading}
+            error={productsError}
             onAddToCart={addToCart}
             onViewProduct={viewProduct}
           />
@@ -134,7 +306,9 @@ function App() {
         return (
           <Catalog
             navigate={navigate}
-            products={MOCK_PRODUCTS}
+            products={products}
+            loading={productsLoading}
+            error={productsError}
             onAddToCart={addToCart}
             onViewProduct={viewProduct}
           />
@@ -165,6 +339,9 @@ function App() {
             cartItems={cartItems}
             navigate={navigate}
             clearCart={clearCart}
+            authToken={authToken}
+            currentUser={currentUser}
+            onOrderCreated={refreshOrders}
           />
         )
 
@@ -172,7 +349,26 @@ function App() {
         return <OrderSuccess navigate={navigate} />
 
       case "account":
-        return <Account navigate={navigate} />
+        return (
+          <Account
+            navigate={navigate}
+            user={currentUser}
+            orders={orders}
+            ordersLoading={ordersLoading}
+            ordersError={ordersError}
+          />
+        )
+
+      case "admin":
+        return (
+          <Admin
+            authToken={authToken}
+            currentUser={currentUser}
+            navigate={navigate}
+            onLogout={handleLogout}
+            onProductsChanged={loadProducts}
+          />
+        )
 
       default:
         return <Login navigate={navigate} onLogin={handleLogin} />
@@ -183,12 +379,13 @@ function App() {
     <>
       <Toaster position="top-right" />
 
-      {isAuthenticated && (
+      {!( ["login", "register", "forgot", "admin"].includes(currentRoute)) && (
         <Navbar
           navigate={navigate}
           cartItemsCount={cartItems.length}
           currentRoute={currentRoute}
           onLogout={handleLogout}
+          currentUser={currentUser}
         />
       )}
 

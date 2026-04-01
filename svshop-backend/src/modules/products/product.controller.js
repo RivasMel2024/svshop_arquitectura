@@ -102,7 +102,7 @@ const updateProduct = async (req, res, next) => {
       modificadoPor: userId
     };
 
-    const updatedProduct = await productService.update(id, payload);
+    const updatedProduct = await productService.update(id, payload, req.user || {});
 
     if (!updatedProduct) {
       return res.status(404).json({ message: 'Producto no encontrado para actualizar' });
@@ -118,7 +118,7 @@ const deleteProduct = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const deletedProduct = await productService.remove(id);
+    const deletedProduct = await productService.remove(id, req.user || {});
 
     if (!deletedProduct) {
       return res.status(404).json({ message: 'Producto no encontrado para eliminar' });

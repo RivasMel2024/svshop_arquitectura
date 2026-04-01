@@ -72,6 +72,46 @@ const getByUser = async (userId, page = 1, limit = 10) => {
 
 }
 
+// Retorna órdenes de un vendedor (solo órdenes cuyos items son de ese vendedor)
+const getBySeller = async (sellerId, page = 1, limit = 10) => {
+  try {
+    page = Math.max(page, 1);
+    limit = Math.min(limit, 100);
+
+    const skip = (page - 1) * limit;
+
+    const query = {
+      'items.vendedorId': sellerId,
+      items: {
+        $not: {
+          $elemMatch: {
+            vendedorId: { $ne: sellerId }
+          }
+        }
+      }
+    };
+
+    const orders = await Order.find(query)
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    const total = await Order.countDocuments(query);
+
+    return {
+      data: orders,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    throw new Error(`Error retrieving seller orders: ${error.message}`)
+  }
+}
+
 
 
 //Actualiza el estado de una orden
@@ -126,5 +166,6 @@ module.exports = {
     create,
     getById,
     getByUser,
+  getBySeller,
     updateOrderStatus
 };

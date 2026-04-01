@@ -1,20 +1,29 @@
 import { useState } from "react"
 import { ArrowLeft, Eye, EyeOff } from "lucide-react"
+import toast from "react-hot-toast"
 
-function Login({ navigate, showToast }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+function Login({ navigate, onLogin }) {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault()
     if (!email || !password) {
-      showToast("Completa todos los campos", "error");
-      return;
+      toast.error("Completa todos los campos")
+      return
     }
-    showToast("Bienvenida a SVShop ✨", "success"); 
-    navigate('home'); 
-  };
+
+    try {
+      setIsSubmitting(true)
+      await onLogin({ email, password })
+    } catch (error) {
+      toast.error(error.message || "No se pudo iniciar sesión")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F57656] p-8">
@@ -43,8 +52,12 @@ function Login({ navigate, showToast }) {
               <div onClick={() => navigate("forgot")} className="text-right text-sm text-[#A04A34] cursor-pointer hover:underline">
                 ¿Olvidaste la contraseña?
               </div>
-              <button type="submit" className="w-full py-3 rounded-lg bg-[#F57656] text-white font-semibold hover:bg-[#CB6045] transition">
-                Iniciar sesión
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-3 rounded-lg bg-[#F57656] text-white font-semibold hover:bg-[#CB6045] transition disabled:opacity-70"
+              >
+                {isSubmitting ? "Ingresando..." : "Iniciar sesión"}
               </button>
               <p className="text-center text-sm text-gray-700 mt-6">
                 No tienes una cuenta aún?{" "}
@@ -58,7 +71,7 @@ function Login({ navigate, showToast }) {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 export default Login

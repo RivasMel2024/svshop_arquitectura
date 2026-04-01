@@ -74,7 +74,22 @@ const create = async (productData) => {
   return await product.save();
 };
 
-const update = async (productId, updateData) => {
+const update = async (productId, updateData, actor = {}) => {
+  const product = await Product.findById(productId);
+
+  if (!product) {
+    return null;
+  }
+
+  const isSeller = actor.rol === 'VENDEDOR';
+  const isOwner = product.vendedor && product.vendedor.toString() === actor.id;
+
+  if (isSeller && !isOwner) {
+    const error = new Error('No tienes permiso para editar este producto');
+    error.statusCode = 403;
+    throw error;
+  }
+
   return await Product.findByIdAndUpdate(
     productId,
     updateData,
@@ -82,11 +97,29 @@ const update = async (productId, updateData) => {
   );
 };
 
-const remove = async (productId) => {
+const remove = async (productId, actor = {}) => {
+  const product = await Product.findById(productId);
+
+  if (!product) {
+    return null;
+  }
+
+  const isSeller = actor.rol === 'VENDEDOR';
+  const isOwner = product.vendedor && product.vendedor.toString() === actor.id;
+
+  if (isSeller && !isOwner) {
+    const error = new Error('No tienes permiso para deshabilitar este producto');
+    error.statusCode = 403;
+    throw error;
+  }
+
   // Borrado lógico: marcamos como no disponible
   return await Product.findByIdAndUpdate(
     productId,
-    { disponible: false },
+    {
+      disponible: false,
+      modificadoPor: actor.id || undefined
+    },
     { new: true }
   );
 };

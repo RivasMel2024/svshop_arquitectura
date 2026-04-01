@@ -1,16 +1,17 @@
 import { useState } from "react"
 import { ArrowLeft } from "lucide-react"
+import toast from "react-hot-toast"
 
-function ForgotPassword({ navigate, showToast }) {
+function ForgotPassword({ navigate }) {
   const [email, setEmail] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email) {
-      showToast("Ingresa tu correo electrónico", "error");
+      toast.error("Ingresa tu correo electrónico")
       return;
     }
-    showToast("Te enviamos un enlace para restablecer tu contraseña 📩", "success");
+    toast.success("Te enviamos un enlace para restablecer tu contraseña 📩")
     setTimeout(() => navigate('login'), 2000);
   };
 

@@ -97,7 +97,21 @@ const login = async (req, res, next) => {
   }
 };
 
+const me = async (req, res, next) => {
+  try {
+    const user = await authService.getUserProfile(req.user.id);
+
+    res.status(200).json({
+      message: 'Perfil obtenido correctamente',
+      user
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
-  login
+  login,
+  me
 };

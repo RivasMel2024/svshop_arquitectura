@@ -9,7 +9,7 @@ import {
   Store as StoreIcon
 } from "lucide-react"
 
-function Navbar({ navigate, cartItemsCount, currentRoute, onLogout, currentUser }) {
+function Navbar({ navigate, cartItemsCount, currentRoute, currentUser }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const searchRef = useRef(null)
@@ -140,15 +140,6 @@ function Navbar({ navigate, cartItemsCount, currentRoute, onLogout, currentUser 
               <span className="font-semibold text-sm">Mi Cuenta</span>
             </button>
 
-            {/* LOGOUT */}
-            {currentUser && (
-              <button
-                onClick={onLogout}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 transition text-white"
-              >
-                <span className="font-semibold text-sm">Salir</span>
-              </button>
-            )}
           </div>
 
           {/* MOBILE */}
@@ -239,18 +230,6 @@ function Navbar({ navigate, cartItemsCount, currentRoute, onLogout, currentUser 
             </button>
           )}
 
-          {/* LOGOUT */}
-          {currentUser && (
-            <button
-              onClick={() => {
-                onLogout()
-                setIsMenuOpen(false)
-              }}
-              className="flex items-center gap-4 w-full py-3 px-4 rounded-lg bg-red-600 hover:bg-red-700 mt-2"
-            >
-              <span>🚪</span> Salir
-            </button>
-          )}
         </div>
       )}
     </nav>

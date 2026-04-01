@@ -18,6 +18,9 @@ router.get('/:id', productController.getProductById);
 // POST /api/products - Crear producto (solo vendedor)
 router.post('/', verifyToken, checkRole(['VENDEDOR']), productController.createProduct);
 
+// POST /api/products/internal/checkout-stock - Ajuste interno de stock al completar checkout
+router.post('/internal/checkout-stock', productController.applyCheckoutStock);
+
 // PUT /api/products/:id - Actualizar producto (solo vendedor y admin)
 router.put('/:id', verifyToken, checkRole(['VENDEDOR', 'ADMINISTRADOR']), productController.updateProduct);
 

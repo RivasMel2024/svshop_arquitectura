@@ -6,12 +6,33 @@
 const dotenv = require('dotenv');
 const path = require('path');
 
+// Cargar primero .env base para detectar NODE_ENV si existe ahi
+dotenv.config();
+
 const environment = process.env.NODE_ENV || 'development';
 
 // En desarrollo cargar .env.development (Mongo local), en producción .env
 const envFile = environment === 'development' ? '.env.development' : '.env';
 const envPath = path.resolve(__dirname, '../../', envFile);
-dotenv.config({ path: envPath });
+dotenv.config({ path: envPath, override: true });
+
+const normalizeEnvValue = (value) => String(value || '').trim();
+const normalizeSmtpPassword = (value) => normalizeEnvValue(value).replace(/[\s\u00A0]+/g, '');
+const resolveSmtpFrom = () => {
+  const rawFrom = normalizeEnvValue(process.env.SMTP_FROM);
+  const smtpUser = normalizeEnvValue(process.env.SMTP_USER);
+
+  if (!rawFrom) {
+    return smtpUser;
+  }
+
+  // Evita usar remitentes de ejemplo que Gmail suele rechazar
+  if (rawFrom.includes('correo@dominio.com')) {
+    return smtpUser;
+  }
+
+  return rawFrom;
+};
 
 const config = {
   NODE_ENV: process.env.NODE_ENV || 'development',
@@ -25,12 +46,16 @@ const config = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
 
   // Email (Nodemailer / SMTP)
-  SMTP_HOST: process.env.SMTP_HOST,
+  SMTP_HOST: normalizeEnvValue(process.env.SMTP_HOST),
   SMTP_PORT: Number(process.env.SMTP_PORT || 587),
   SMTP_SECURE: String(process.env.SMTP_SECURE || 'false') === 'true',
-  SMTP_USER: process.env.SMTP_USER,
-  SMTP_PASS: process.env.SMTP_PASS,
-  SMTP_FROM: process.env.SMTP_FROM || process.env.SMTP_USER
+  SMTP_USER: normalizeEnvValue(process.env.SMTP_USER),
+  SMTP_PASS: normalizeSmtpPassword(process.env.SMTP_PASS),
+  SMTP_FROM: resolveSmtpFrom(),
+
+  // Integración con backend monolito para actualizar stock
+  MONOLITH_API_URL: process.env.MONOLITH_API_URL || 'http://localhost:8080',
+  INTERNAL_API_KEY: process.env.INTERNAL_API_KEY
 };
 
 // Validar variables críticas en producción

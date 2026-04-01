@@ -1,5 +1,40 @@
 const orderService = require('./order.service');
 const { sendCheckoutConfirmationEmail } = require('./order.email');
+const config = require('../../config/config');
+
+const updateStockAfterCheckout = async ({ items, actorId }) => {
+  if (!config.MONOLITH_API_URL) {
+    throw new Error('MONOLITH_API_URL no está configurado');
+  }
+
+  if (!config.INTERNAL_API_KEY) {
+    throw new Error('INTERNAL_API_KEY no está configurado');
+  }
+
+  const baseUrl = String(config.MONOLITH_API_URL).replace(/\/+$/, '');
+  const response = await fetch(`${baseUrl}/api/products/internal/checkout-stock`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-internal-key': config.INTERNAL_API_KEY
+    },
+    body: JSON.stringify({ items, actorId })
+  });
+
+  const raw = await response.text();
+  let payload = {};
+  try {
+    payload = raw ? JSON.parse(raw) : {};
+  } catch {
+    payload = {};
+  }
+
+  if (!response.ok) {
+    throw new Error(payload.message || 'No se pudo actualizar stock en productos');
+  }
+
+  return payload;
+};
 
 
 //Crea una orden nueva
@@ -20,6 +55,11 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ message: 'total es requerido y debe ser > 0' });
     }
 
+    await updateStockAfterCheckout({
+      items,
+      actorId: req.user.id,
+    });
+
     // Agregar clienteId del usuario autenticado
     const orderData = {
       ...req.body,
@@ -29,14 +69,33 @@ const createOrder = async (req, res) => {
 
     const order = await orderService.create(orderData);
 
-    try {
-      await sendCheckoutConfirmationEmail({
-        to: req.user.email,
-        order,
+    const recipientEmail = req.user?.email || req.body?.email || req.body?.clienteEmail;
+
+    if (!recipientEmail) {
+      console.warn('Checkout sin correo destino para confirmacion', {
+        userId: req.user?.id,
+        numeroOrden: order?.numeroOrden,
       });
-    } catch (emailError) {
-      // No bloquear checkout por fallo SMTP
-      console.warn('No se pudo enviar correo de confirmacion:', emailError.message);
+    } else {
+      try {
+        await sendCheckoutConfirmationEmail({
+          to: recipientEmail,
+          order,
+        });
+        console.log('Correo de confirmacion enviado', {
+          to: recipientEmail,
+          numeroOrden: order?.numeroOrden,
+        });
+      } catch (emailError) {
+        // No bloquear checkout por fallo SMTP
+        console.warn('No se pudo enviar correo de confirmacion', {
+          to: recipientEmail,
+          numeroOrden: order?.numeroOrden,
+          code: emailError?.code,
+          response: emailError?.response,
+          message: emailError?.message,
+        });
+      }
     }
 
     res.status(201).json(order);

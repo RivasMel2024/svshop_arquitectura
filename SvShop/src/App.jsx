@@ -352,6 +352,7 @@ function App() {
         return (
           <Account
             navigate={navigate}
+            onLogout={handleLogout}
             user={currentUser}
             orders={orders}
             ordersLoading={ordersLoading}

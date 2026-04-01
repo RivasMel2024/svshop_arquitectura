@@ -124,10 +124,155 @@ const remove = async (productId, actor = {}) => {
   );
 };
 
+const applyStockWithoutTransaction = async (items = [], actorId = null) => {
+  const updated = [];
+
+  for (const item of items) {
+    const productId = item.producto;
+    const quantity = Number(item.cantidad || 0);
+
+    if (!productId || !quantity || quantity <= 0) {
+      const error = new Error('Cada item debe incluir producto y cantidad válida');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const updatedProduct = await Product.findOneAndUpdate(
+      {
+        _id: productId,
+        disponible: true,
+        stock: { $gte: quantity }
+      },
+      {
+        $inc: { stock: -quantity },
+        ...(actorId ? { modificadoPor: actorId } : {})
+      },
+      { new: true }
+    );
+
+    if (!updatedProduct) {
+      const existing = await Product.findById(productId);
+
+      if (!existing) {
+        const error = new Error(`Producto no encontrado: ${productId}`);
+        error.statusCode = 404;
+        throw error;
+      }
+
+      if (!existing.disponible) {
+        const error = new Error(`Producto no disponible: ${existing.nombre}`);
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const error = new Error(`Stock insuficiente para ${existing.nombre}. Disponible: ${existing.stock}, solicitado: ${quantity}`);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (updatedProduct.stock <= 0 && updatedProduct.disponible) {
+      updatedProduct.disponible = false;
+      await updatedProduct.save();
+    }
+
+    updated.push({
+      productId: updatedProduct._id,
+      nombre: updatedProduct.nombre,
+      stockActual: updatedProduct.stock,
+      disponible: updatedProduct.disponible,
+    });
+  }
+
+  return updated;
+};
+
+const applyCheckoutStock = async (items = [], actorId = null) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    const error = new Error('items debe ser un array no vacío');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const session = await Product.startSession();
+
+  try {
+    const updated = [];
+
+    await session.withTransaction(async () => {
+      for (const item of items) {
+        const productId = item.producto;
+        const quantity = Number(item.cantidad || 0);
+
+        if (!productId || !quantity || quantity <= 0) {
+          const error = new Error('Cada item debe incluir producto y cantidad válida');
+          error.statusCode = 400;
+          throw error;
+        }
+
+        const product = await Product.findById(productId).session(session);
+
+        if (!product) {
+          const error = new Error(`Producto no encontrado: ${productId}`);
+          error.statusCode = 404;
+          throw error;
+        }
+
+        if (!product.disponible) {
+          const error = new Error(`Producto no disponible: ${product.nombre}`);
+          error.statusCode = 400;
+          throw error;
+        }
+
+        if (product.stock < quantity) {
+          const error = new Error(`Stock insuficiente para ${product.nombre}. Disponible: ${product.stock}, solicitado: ${quantity}`);
+          error.statusCode = 400;
+          throw error;
+        }
+
+        product.stock -= quantity;
+        if (product.stock <= 0) {
+          product.stock = 0;
+          product.disponible = false;
+        }
+
+        if (actorId) {
+          product.modificadoPor = actorId;
+        }
+
+        await product.save({ session });
+
+        updated.push({
+          productId: product._id,
+          nombre: product.nombre,
+          stockActual: product.stock,
+          disponible: product.disponible,
+        });
+      }
+    });
+
+    return updated;
+  } catch (error) {
+    const isStandaloneMongo =
+      error?.code === 20 ||
+      error?.codeName === 'IllegalOperation' ||
+      String(error?.message || '').includes('Transaction numbers are only allowed on a replica set member or mongos');
+
+    if (!isStandaloneMongo) {
+      throw error;
+    }
+
+    // Fallback para MongoDB standalone en desarrollo local
+    return await applyStockWithoutTransaction(items, actorId);
+  } finally {
+    session.endSession();
+  }
+};
+
 module.exports = {
   getAll,
   getById,
   create,
   update,
-  remove
+  remove,
+  applyCheckoutStock
 };

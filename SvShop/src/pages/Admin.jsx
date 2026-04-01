@@ -310,14 +310,6 @@ function Admin({ authToken, currentUser, navigate, onLogout, onProductsChanged }
             <User className="h-4 w-4" />
             Mi Cuenta
           </button>
-
-          <button
-            onClick={onLogout}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition"
-          >
-            <LogOut className="h-4 w-4" />
-            Salir
-          </button>
         </div>
 
         <h1 className="text-3xl font-bold mb-8">Panel Administrativo</h1>
@@ -653,6 +645,14 @@ function Admin({ authToken, currentUser, navigate, onLogout, onProductsChanged }
                 <p className="font-semibold">{userRole || "-"}</p>
               </div>
             </div>
+
+            <button
+              onClick={onLogout}
+              className="mt-6 bg-red-500 text-white px-5 py-2 rounded-xl font-semibold hover:bg-red-600 transition inline-flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Salir de sesión
+            </button>
           </div>
         )}
 

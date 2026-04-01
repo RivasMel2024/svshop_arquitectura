@@ -4,6 +4,7 @@
  */
 
 const productService = require('./product.service');
+const env = require('../../config/config');
 
 // Helper para validar tamaño de imagen Base64 (límite 3MB)
 const validarTamañoBase64 = (base64String, maxMB = 3) => {
@@ -130,10 +131,31 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
+const applyCheckoutStock = async (req, res, next) => {
+  try {
+    const internalKey = req.headers['x-internal-key'];
+
+    if (!env.INTERNAL_API_KEY || internalKey !== env.INTERNAL_API_KEY) {
+      return res.status(401).json({ message: 'No autorizado para operación interna' });
+    }
+
+    const { items, actorId } = req.body;
+    const updated = await productService.applyCheckoutStock(items, actorId || null);
+
+    res.status(200).json({
+      message: 'Stock actualizado correctamente',
+      updated
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllProducts,
   getProductById,
   createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  applyCheckoutStock
 };

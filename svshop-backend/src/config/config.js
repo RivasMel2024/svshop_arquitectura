@@ -50,6 +50,9 @@ const config = {
 
   // Microservicio
   ORDERS_SERVICE_URL: process.env.ORDERS_SERVICE_URL,
+
+  // Seguridad interna entre servicios
+  INTERNAL_API_KEY: process.env.INTERNAL_API_KEY,
 };
 
 // Validar variables críticas en producción

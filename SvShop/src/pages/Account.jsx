@@ -8,7 +8,7 @@ const ORDER_STATUS_LABEL = {
   CANCELADA: "Cancelada"
 }
 
-function Account({ user, orders = [], ordersLoading = false, ordersError = "" }) {
+function Account({ navigate, onLogout, user, orders = [], ordersLoading = false, ordersError = "" }) {
   const [cards, setCards] = useState([])
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -90,6 +90,13 @@ function Account({ user, orders = [], ordersLoading = false, ordersError = "" })
           <p className="text-gray-600">
             Gestiona tu información y pedidos
           </p>
+
+          <button
+            onClick={onLogout}
+            className="mt-4 bg-red-500 text-white px-5 py-2 rounded-xl font-semibold hover:bg-red-600 transition"
+          >
+            Salir de sesión
+          </button>
         </div>
 
         {/* 👤 INFORMACIÓN PERSONAL */}

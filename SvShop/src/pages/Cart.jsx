@@ -41,7 +41,7 @@ function Cart({ cartItems = [], updateQuantity, removeItem, navigate }) {
               ¡Parece que aún no has agregado nada!
             </p>
             <button
-              onClick={() => navigate("home")}
+              onClick={() => navigate("catalog")}
               className="bg-[#F57656] text-white px-8 py-3 rounded-xl font-medium hover:bg-[#CB6045] transition"
             >
               Ir de compras

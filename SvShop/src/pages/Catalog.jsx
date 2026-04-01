@@ -1,16 +1,15 @@
 import { useState } from "react"
-import MOCK_PRODUCTS from "../data/products"
 
-function Catalog({ navigate, onAddToCart, onViewProduct }) {
+function Catalog({ navigate, products = [], loading = false, error = "", onAddToCart, onViewProduct }) {
   const [selectedCategory, setSelectedCategory] = useState(null)
   
   // Obtener categorías únicas ordenadas alfabéticamente
-  const categories = ["Todas las categorías", ...Array.from(new Set(MOCK_PRODUCTS.map(p => p.category))).sort()]
+  const categories = ["Todas las categorías", ...Array.from(new Set(products.map(p => p.category))).sort()]
   
   // Filtrar productos por categoría seleccionada
   const filteredProducts = selectedCategory && selectedCategory !== "Todas las categorías"
-    ? MOCK_PRODUCTS.filter(p => p.category === selectedCategory)
-    : MOCK_PRODUCTS
+    ? products.filter(p => p.category === selectedCategory)
+    : products
 
   return (
     <div className="min-h-screen bg-[#FFF5F2] py-10">
@@ -36,8 +35,20 @@ function Catalog({ navigate, onAddToCart, onViewProduct }) {
           </div>
         </div>
 
+        {loading && (
+          <div className="text-center py-12">
+            <p className="text-xl text-gray-600">Cargando productos...</p>
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="text-center py-12">
+            <p className="text-xl text-red-600 mb-6">{error}</p>
+          </div>
+        )}
+
         {/* Mostrar mensaje si no hay productos en la categoría */}
-        {filteredProducts.length === 0 ? (
+        {!loading && !error && filteredProducts.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-xl text-gray-600 mb-6">No hay productos disponibles en esta categoría</p>
             <button
@@ -47,7 +58,7 @@ function Catalog({ navigate, onAddToCart, onViewProduct }) {
               Ver todos los productos
             </button>
           </div>
-        ) : (
+        ) : !loading && !error ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
             <div key={product.id} className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden group cursor-pointer" onClick={() => onViewProduct(product)}>
@@ -82,7 +93,7 @@ function Catalog({ navigate, onAddToCart, onViewProduct }) {
             </div>
           ))}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

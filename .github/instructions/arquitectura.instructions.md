@@ -36,9 +36,6 @@ No pongas lógica de negocio en controllers ni en routes.
 
 ## PATRONES OBLIGATORIOS
 - Arquitectura en capas: controller → service → model
-- DTOs para validación de entrada (evitar mass assignment)
-- Repository pattern adaptado con Mongoose
-- Singleton para conexión a MongoDB (una sola instancia del pool)
 - Middleware de JWT para proteger rutas
 - Middleware de roles para control de acceso (CLIENTE, VENDEDOR, ADMINISTRADOR)
 

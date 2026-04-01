@@ -40,12 +40,19 @@ const config = {
   
   // Bcrypt
   BCRYPT_SALT_ROUNDS: parseInt(process.env.BCRYPT_SALT_ROUNDS) || 10,
+
+  // Seguridad de login
+  LOGIN_MAX_ATTEMPTS: parseInt(process.env.LOGIN_MAX_ATTEMPTS) || 3,
+  LOGIN_LOCK_MINUTES: parseInt(process.env.LOGIN_LOCK_MINUTES) || 15,
   
   // Límites
   MAX_IMAGE_SIZE_MB: parseInt(process.env.MAX_IMAGE_SIZE_MB) || 3,
 
   // Microservicio
   ORDERS_SERVICE_URL: process.env.ORDERS_SERVICE_URL,
+
+  // Seguridad interna entre servicios
+  INTERNAL_API_KEY: process.env.INTERNAL_API_KEY,
 };
 
 // Validar variables críticas en producción

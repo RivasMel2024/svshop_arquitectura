@@ -43,4 +43,19 @@ const cartSchema = new mongoose.Schema({
 // Índice para búsquedas rápidas por usuario
 // Nota: usuario ya tiene unique: true que crea el índice automáticamente
 
+// Calcular total automáticamente antes de guardar
+cartSchema.pre('save', function (next) {
+  this.total = this.items.reduce((acc, item) => {
+    return acc + (item.cantidad * item.precioUnitario);
+  }, 0);
+  next();
+});
+
+// Método de instancia para vaciar carrito (se usará desde checkout)
+cartSchema.methods.vaciarCarrito = async function () {
+  this.items = [];
+  this.total = 0;
+  return this.save();
+};
+
 module.exports = mongoose.model('Cart', cartSchema);

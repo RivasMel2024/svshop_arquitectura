@@ -6,23 +6,75 @@
 const User = require('./user.model');
 
 const getAll = async (page = 1, limit = 10) => {
-  // TODO: Implementar paginación (10 o 20 registros)
-  throw new Error('Not implemented');
+  const skip = (page - 1) * limit;
+  
+  const users = await User.find()
+    .select('-password') // No enviar contraseñas
+    .skip(skip)
+    .limit(Number(limit))
+    .sort({ createdAt: -1 });
+  
+  const total = await User.countDocuments();
+  
+  return {
+    usuarios: users,
+    total,
+    page: Number(page),
+    limit: Number(limit),
+    pages: Math.ceil(total / limit)
+  };
 };
 
 const getById = async (userId) => {
-  // TODO: Implementar búsqueda por ID
-  throw new Error('Not implemented');
+  const user = await User.findById(userId).select('-password');
+  
+  if (!user) {
+    const error = new Error('Usuario no encontrado');
+    error.statusCode = 404;
+    throw error;
+  }
+  
+  return user;
 };
 
-const update = async (userId, updateData) => {
-  // TODO: Implementar actualización con auditoría
-  throw new Error('Not implemented');
+const update = async (userId, updateData, updatedByUserId) => {
+  // Campos que no se pueden actualizar directamente
+  const forbiddenFields = ['password', 'creadoPor', 'createdAt'];
+  forbiddenFields.forEach(field => delete updateData[field]);
+  
+  const user = await User.findByIdAndUpdate(
+    userId,
+    {
+      ...updateData,
+      modificadoPor: updatedByUserId
+    },
+    { new: true, runValidators: true }
+  ).select('-password');
+  
+  if (!user) {
+    const error = new Error('Usuario no encontrado');
+    error.statusCode = 404;
+    throw error;
+  }
+  
+  return user;
 };
 
 const remove = async (userId) => {
-  // TODO: Implementar eliminación (soft delete recomendado)
-  throw new Error('Not implemented');
+  // Soft delete: solo marcar como inactivo
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { activo: false },
+    { new: true }
+  ).select('-password');
+  
+  if (!user) {
+    const error = new Error('Usuario no encontrado');
+    error.statusCode = 404;
+    throw error;
+  }
+  
+  return user;
 };
 
 module.exports = {

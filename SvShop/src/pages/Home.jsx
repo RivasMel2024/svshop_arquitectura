@@ -1,8 +1,7 @@
 import { ArrowRight, ShoppingCart, Truck, ShieldCheck, Clock } from "lucide-react"
-import MOCK_PRODUCTS from "../data/products"
 import Footer from "../components/Footer"
 
-function Home({ navigate, onAddToCart, onViewProduct }) {
+function Home({ navigate, products = [], loading = false, error = "", onAddToCart, onViewProduct }) {
 
   const categories = [
     { name: "Ropa", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" },
@@ -11,7 +10,7 @@ function Home({ navigate, onAddToCart, onViewProduct }) {
     { name: "Tecnología", image: "https://images.unsplash.com/photo-1498049794561-7780e7231661?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" },
   ]
 
-  const featuredProducts = MOCK_PRODUCTS.slice(0, 4)
+  const featuredProducts = products.slice(0, 4)
 
   return (
     <div className="min-h-screen bg-[#FFF5F2] pb-12">
@@ -66,7 +65,20 @@ function Home({ navigate, onAddToCart, onViewProduct }) {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {loading && (
+          <div className="text-center py-8">
+            <p className="text-lg text-gray-600">Cargando productos...</p>
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="text-center py-8">
+            <p className="text-lg text-red-600">{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {featuredProducts.map((product) => (
             <div 
               key={product.id} 
@@ -115,7 +127,8 @@ function Home({ navigate, onAddToCart, onViewProduct }) {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
       <Footer />
 

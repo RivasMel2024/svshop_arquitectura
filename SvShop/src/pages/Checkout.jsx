@@ -1,13 +1,28 @@
 import { useState, useEffect } from "react"
 import { ArrowLeft, User, CreditCard } from "lucide-react"
+import toast from "react-hot-toast"
+import { createOrder } from "../services/checkout.api"
 
-function Checkout({ cartItems = [], navigate, clearCart }) {
+function Checkout({ cartItems = [], navigate, clearCart, authToken = "", currentUser = null, onOrderCreated = null }) {
   const [isProcessing, setIsProcessing] = useState(false)
+  const [formData, setFormData] = useState({
+    nombre: "",
+    apellidos: "",
+    direccion: "",
+    ciudad: "",
+    codigoPostal: "",
+    telefono: "",
+    numeroTarjeta: "",
+    fechaVencimiento: "",
+    cvc: "",
+  })
 
   const subtotal = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   )
+  const shippingCost = 10 // Costo de envío fijo
+  const total = subtotal + shippingCost
 
   useEffect(() => {
     if (cartItems.length === 0) {
@@ -15,15 +30,69 @@ function Checkout({ cartItems = [], navigate, clearCart }) {
     }
   }, [cartItems, navigate])
 
-  const handleSubmit = (e) => {
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Validar que haya usuario autenticado
+    if (!authToken || !currentUser?.id) {
+      toast.error("Debes iniciar sesión para completar la compra")
+      navigate("login")
+      return
+    }
+
+    // Validar que el formulario esté completo
+    if (
+      !formData.nombre ||
+      !formData.apellidos ||
+      !formData.direccion ||
+      !formData.ciudad ||
+      !formData.codigoPostal ||
+      !formData.telefono ||
+      !formData.numeroTarjeta ||
+      !formData.fechaVencimiento ||
+      !formData.cvc
+    ) {
+      toast.error("Por favor completa todos los campos")
+      return
+    }
+
     setIsProcessing(true)
 
-    setTimeout(() => {
-      setIsProcessing(false)
+    try {
+      // Llamar al API para crear la orden
+      const order = await createOrder({
+        cartItems,
+        total,
+        subtotal,
+        token: authToken,
+        shippingData: formData,
+      })
+
+      // Indicar éxito
+      toast.success("¡Orden creada exitosamente!")
+
+      // Refrescar órdenes si hay callback
+      if (onOrderCreated) {
+        await onOrderCreated()
+      }
+
+      // Limpiar carrito y navegar a success
       clearCart()
       navigate("success")
-    }, 2000)
+    } catch (error) {
+      toast.error(error.message || "Error al crear la orden. Intenta de nuevo.")
+      console.error("Error creando orden:", error)
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   if (cartItems.length === 0) return null
@@ -63,20 +132,60 @@ function Checkout({ cartItems = [], navigate, clearCart }) {
                 </h2>
 
                 <div className="grid grid-cols-2 gap-5">
-                  <input required placeholder="Nombre" className={inputStyle} />
-                  <input required placeholder="Apellidos" className={inputStyle} />
+                  <input
+                    required
+                    placeholder="Nombre"
+                    name="nombre"
+                    value={formData.nombre}
+                    onChange={handleInputChange}
+                    className={inputStyle}
+                  />
+                  <input
+                    required
+                    placeholder="Apellidos"
+                    name="apellidos"
+                    value={formData.apellidos}
+                    onChange={handleInputChange}
+                    className={inputStyle}
+                  />
                 </div>
 
                 <input
                   required
                   placeholder="Dirección completa"
+                  name="direccion"
+                  value={formData.direccion}
+                  onChange={handleInputChange}
                   className={`${inputStyle} mt-5`}
                 />
 
                 <div className="grid grid-cols-2 gap-5 mt-5">
-                  <input required placeholder="Ciudad" className={inputStyle} />
-                  <input required placeholder="Código Postal" className={inputStyle} />
+                  <input
+                    required
+                    placeholder="Ciudad"
+                    name="ciudad"
+                    value={formData.ciudad}
+                    onChange={handleInputChange}
+                    className={inputStyle}
+                  />
+                  <input
+                    required
+                    placeholder="Código Postal"
+                    name="codigoPostal"
+                    value={formData.codigoPostal}
+                    onChange={handleInputChange}
+                    className={inputStyle}
+                  />
                 </div>
+
+                <input
+                  required
+                  placeholder="Teléfono"
+                  name="telefono"
+                  value={formData.telefono}
+                  onChange={handleInputChange}
+                  className={`${inputStyle} mt-5`}
+                />
               </div>
 
               {/* PAGO */}
@@ -89,12 +198,32 @@ function Checkout({ cartItems = [], navigate, clearCart }) {
                 <input
                   required
                   placeholder="0000 0000 0000 0000"
+                  name="numeroTarjeta"
+                  value={formData.numeroTarjeta}
+                  onChange={handleInputChange}
+                  maxLength="19"
                   className={inputStyle}
                 />
 
                 <div className="grid grid-cols-2 gap-5 mt-5">
-                  <input required placeholder="MM/AA" className={inputStyle} />
-                  <input required placeholder="CVC" className={inputStyle} />
+                  <input
+                    required
+                    placeholder="MM/AA"
+                    name="fechaVencimiento"
+                    value={formData.fechaVencimiento}
+                    onChange={handleInputChange}
+                    maxLength="5"
+                    className={inputStyle}
+                  />
+                  <input
+                    required
+                    placeholder="CVC"
+                    name="cvc"
+                    value={formData.cvc}
+                    onChange={handleInputChange}
+                    maxLength="4"
+                    className={inputStyle}
+                  />
                 </div>
               </div>
             </form>
@@ -127,11 +256,19 @@ function Checkout({ cartItems = [], navigate, clearCart }) {
                 ))}
               </div>
 
-              <div className="border-t pt-4 mb-6">
-                <div className="flex justify-between font-bold text-2xl">
+              <div className="border-t pt-4 mb-6 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span >Subtotal</span>
+                  <span>${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Envío</span>
+                  <span>${shippingCost.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-2xl mt-2">
                   <span>Total</span>
                   <span className="text-[#F57656]">
-                    ${subtotal.toFixed(2)}
+                    ${total.toFixed(2)}
                   </span>
                 </div>
               </div>

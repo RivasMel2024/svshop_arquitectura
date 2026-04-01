@@ -15,6 +15,7 @@ const userRoutes = require('./modules/users/user.routes');
 const productRoutes = require('./modules/products/product.routes');
 const cartRoutes = require('./modules/cart/cart.routes');
 const invoiceRoutes = require('./modules/invoices/invoice.routes');
+const checkoutRoutes = require('./modules/checkout/checkout.routes');
 
 const app = express();
 
@@ -23,8 +24,8 @@ connectDB();
 
 // Middlewares globales
 app.use(cors());
-app.use(express.json({ limit: '5mb' })); // Permitir JSON con imágenes base64
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' })); // Límite técnico; el módulo products valida 3MB de imagen
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -41,6 +42,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/checkout', checkoutRoutes);
 
 // Ruta 404
 app.use((req, res) => {

@@ -10,10 +10,10 @@ import './index.css'
 //   <Admin />
 // )
 
-//import Vendor from './pages/Vendor'
- //ReactDOM.createRoot(document.getElementById("root")).render(
-   //<Vendor />
- //)
+// import Vendor from './pages/Vendor'
+//  ReactDOM.createRoot(document.getElementById("root")).render(
+//    <Vendor />
+//  )
 
  ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>

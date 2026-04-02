@@ -43,6 +43,10 @@ const updateUser = async (req, res, next) => {
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ message: 'No se proporcionaron datos para actualizar' });
     }
+
+    if (String(id) === String(req.user.id) && updateData.activo === false) {
+      return res.status(400).json({ message: 'No puedes deshabilitar tu propia cuenta' });
+    }
     
     const user = await userService.update(id, updateData, req.user.id);
     res.status(200).json(user);
@@ -64,7 +68,7 @@ const deleteUser = async (req, res, next) => {
       return res.status(400).json({ message: 'No puedes eliminar tu propia cuenta' });
     }
     
-    const user = await userService.remove(id);
+    const user = await userService.remove(id, req.user.id);
     res.status(200).json({ message: 'Usuario eliminado correctamente', user });
   } catch (error) {
     next(error);

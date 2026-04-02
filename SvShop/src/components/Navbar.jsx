@@ -13,6 +13,10 @@ function Navbar({ navigate, cartItemsCount, currentRoute, currentUser }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const searchRef = useRef(null)
+  const userRole = currentUser?.rol || currentUser?.role
+  const isBackofficeUser = userRole === "ADMINISTRADOR" || userRole === "VENDEDOR"
+  const backofficeRoute = userRole === "VENDEDOR" ? "vendor" : "admin"
+  const backofficeLabel = userRole === "VENDEDOR" ? "Vendedor" : "Admin"
 
   const isActive = (route) => currentRoute === route
 
@@ -118,16 +122,16 @@ function Navbar({ navigate, cartItemsCount, currentRoute, currentUser }) {
             </div>
 
             {/* ADMIN BUTTON (si es ADMIN o VENDEDOR) */}
-            {currentUser && (currentUser.rol === "ADMINISTRADOR" || currentUser.rol === "VENDEDOR" || currentUser.role === "ADMINISTRADOR" || currentUser.role === "VENDEDOR") && (
+            {currentUser && isBackofficeUser && (
               <button
-                onClick={() => navigate("admin")}
+                onClick={() => navigate(backofficeRoute)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl transition ${
-                  currentRoute === "admin"
+                  currentRoute === backofficeRoute
                     ? "bg-[#CB6045] shadow-inner"
                     : "border border-white/30 hover:bg-white hover:text-[#CB6045]"
                 }`}
               >
-                <span className="font-semibold text-sm">Admin</span>
+                <span className="font-semibold text-sm">{backofficeLabel}</span>
               </button>
             )}
 
@@ -218,15 +222,15 @@ function Navbar({ navigate, cartItemsCount, currentRoute, currentUser }) {
           </button>
 
           {/* ADMIN BUTTON (si es ADMIN o VENDEDOR) */}
-          {currentUser && (currentUser.rol === "ADMINISTRADOR" || currentUser.rol === "VENDEDOR" || currentUser.role === "ADMINISTRADOR" || currentUser.role === "VENDEDOR") && (
+          {currentUser && isBackofficeUser && (
             <button
               onClick={() => {
-                navigate("admin")
+                navigate(backofficeRoute)
                 setIsMenuOpen(false)
               }}
               className="flex items-center gap-4 w-full py-3 px-4 rounded-lg hover:bg-[#A04A34]"
             >
-              <span>⚙️</span> Panel Admin
+              <span>⚙️</span> Panel {backofficeLabel}
             </button>
           )}
 

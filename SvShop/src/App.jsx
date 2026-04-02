@@ -12,6 +12,7 @@ import Checkout from "./pages/Checkout"
 import OrderSuccess from "./pages/OrderSuccess"
 import Account from "./pages/Account"
 import Admin from "./pages/Admin"
+import Vendor from "./pages/Vendor"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
 import ForgotPassword from "./pages/ForgotPassword"
@@ -46,6 +47,7 @@ function App() {
   const isAuthenticated = Boolean(authToken)
   const userRole = currentUser?.rol || currentUser?.role || ""
   const isBackofficeUser = userRole === "ADMINISTRADOR" || userRole === "VENDEDOR"
+  const isSeller = userRole === "VENDEDOR"
 
   const saveSession = (token, user) => {
     setAuthToken(token)
@@ -65,7 +67,7 @@ function App() {
     try {
       setProductsLoading(true)
       setProductsError("")
-      const data = await getProducts({ page: 1, limit: 20 })
+      const data = await getProducts({ page: 1, limit: 20, disponible: true })
       setProducts(data)
     } catch (error) {
       setProductsError(error.message || "No se pudo cargar el catálogo")
@@ -108,9 +110,9 @@ function App() {
 
     const storeRoutes = ["home", "catalog", "product", "cart", "checkout", "success"]
     if (storeRoutes.includes(currentRoute)) {
-      setCurrentRoute("admin")
+      setCurrentRoute(isSeller ? "vendor" : "admin")
     }
-  }, [isAuthenticated, isBackofficeUser, currentRoute])
+  }, [isAuthenticated, isBackofficeUser, currentRoute, isSeller])
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -144,7 +146,7 @@ function App() {
   // 🔹 Navegación protegida
   const navigate = (route, payload = null) => {
     const protectedRoutes = ["cart", "checkout", "account"]
-    const adminRoutes = ["admin"]
+    const backofficeRoutes = ["admin", "vendor"]
 
     // Validar rutas que requieren autenticación
     if (
@@ -157,7 +159,7 @@ function App() {
     }
 
     // Validar rutas que requieren rol ADMIN o VENDEDOR
-    if (adminRoutes.includes(route)) {
+    if (backofficeRoutes.includes(route)) {
       if (!isAuthenticated) {
         toast.error("Debes iniciar sesión para acceder al panel administrativo")
         setCurrentRoute("login")
@@ -170,6 +172,16 @@ function App() {
       if (!isAdmin) {
         toast.error("No tienes permiso para acceder al panel administrativo")
         setCurrentRoute("home")
+        return
+      }
+
+      if (route === "admin" && userRole === "VENDEDOR") {
+        setCurrentRoute("vendor")
+        return
+      }
+
+      if (route === "vendor" && userRole !== "VENDEDOR") {
+        setCurrentRoute("admin")
         return
       }
     }
@@ -186,7 +198,11 @@ function App() {
     saveSession(result.token, result.user)
     const role = result.user?.rol || result.user?.role || ""
     const isAdminOrSeller = role === "ADMINISTRADOR" || role === "VENDEDOR"
-    setCurrentRoute(isAdminOrSeller ? "admin" : "home")
+    if (!isAdminOrSeller) {
+      setCurrentRoute("home")
+    } else {
+      setCurrentRoute(role === "VENDEDOR" ? "vendor" : "admin")
+    }
     toast.success(`Bienvenida ${result.user.nombre} ✨`)
   }
 
@@ -371,6 +387,17 @@ function App() {
           />
         )
 
+      case "vendor":
+        return (
+          <Vendor
+            authToken={authToken}
+            currentUser={currentUser}
+            navigate={navigate}
+            onLogout={handleLogout}
+            onProductsChanged={loadProducts}
+          />
+        )
+
       default:
         return <Login navigate={navigate} onLogin={handleLogin} />
     }
@@ -380,7 +407,7 @@ function App() {
     <>
       <Toaster position="top-right" />
 
-      {!( ["login", "register", "forgot", "admin"].includes(currentRoute)) && (
+      {!( ["login", "register", "forgot", "admin", "vendor"].includes(currentRoute)) && (
         <Navbar
           navigate={navigate}
           cartItemsCount={cartItems.length}

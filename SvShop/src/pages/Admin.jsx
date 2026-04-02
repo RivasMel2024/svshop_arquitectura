@@ -6,27 +6,17 @@ import {
   LifeBuoy,
   User,
   LogOut,
-  Pencil,
-  UserX,
-  Plus,
-  Truck
+  UserX
 } from "lucide-react"
 import toast from "react-hot-toast"
-import AddProductModal from "../components/AddProductModal"
-import EditProductModal from "../components/EditProductModal"
 import { getProducts, disableProduct } from "../services/products.api"
 import { getAllUsers, deleteUser } from "../services/users.api"
-import { getOrdersBySeller, updateOrderStatus } from "../services/orders.api"
 
 function Admin({ authToken, currentUser, navigate, onLogout, onProductsChanged }) {
   const userRole = currentUser?.rol || currentUser?.role || ""
-  const isSeller = userRole === "VENDEDOR"
   const isAdmin = userRole === "ADMINISTRADOR"
 
-  const [activeTab, setActiveTab] = useState(() => (isSeller ? "products" : "users"))
-  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false)
-  const [isEditProductModalOpen, setIsEditProductModalOpen] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [activeTab, setActiveTab] = useState("users")
   const [userRoleFilter, setUserRoleFilter] = useState("TODOS")
 
   // Estado para Usuarios
@@ -38,12 +28,6 @@ function Admin({ authToken, currentUser, navigate, onLogout, onProductsChanged }
   const [products, setProducts] = useState([])
   const [productsLoading, setProductsLoading] = useState(false)
   const [productsError, setProductsError] = useState("")
-
-  // Estado para Órdenes de vendedor
-  const [sellerOrders, setSellerOrders] = useState([])
-  const [sellerOrdersLoading, setSellerOrdersLoading] = useState(false)
-  const [sellerOrdersError, setSellerOrdersError] = useState("")
-  const [selectedStates, setSelectedStates] = useState({})
 
   // Mock Tickets Soporte (sin API aún)
   const [tickets] = useState([
@@ -57,16 +41,7 @@ function Admin({ authToken, currentUser, navigate, onLogout, onProductsChanged }
       loadUsers()
     }
     loadProducts()
-    if (isSeller) {
-      loadSellerOrders()
-    }
   }, [authToken, isAdmin])
-
-  useEffect(() => {
-    if (isSeller && activeTab !== "products" && activeTab !== "orders" && activeTab !== "account") {
-      setActiveTab("products")
-    }
-  }, [isSeller, activeTab])
 
   // 📥 Función para cargar usuarios del backend
   const loadUsers = async () => {
@@ -100,34 +75,6 @@ function Admin({ authToken, currentUser, navigate, onLogout, onProductsChanged }
     }
   }
 
-  const loadSellerOrders = async () => {
-    if (!authToken || !currentUser?.id || !isSeller) return
-
-    try {
-      setSellerOrdersLoading(true)
-      setSellerOrdersError("")
-      const result = await getOrdersBySeller({
-        sellerId: currentUser.id,
-        token: authToken,
-        page: 1,
-        limit: 50
-      })
-
-      const orders = Array.isArray(result.data) ? result.data : []
-      setSellerOrders(orders)
-
-      const nextStates = {}
-      orders.forEach((order) => {
-        nextStates[order._id] = order.estado
-      })
-      setSelectedStates(nextStates)
-    } catch (error) {
-      setSellerOrdersError(error.message || "Error cargando órdenes del vendedor")
-      setSellerOrders([])
-    } finally {
-      setSellerOrdersLoading(false)
-    }
-  }
 
   // 🗑️ Eliminar usuario
   const handleDeleteUser = async (userId) => {
@@ -144,15 +91,6 @@ function Admin({ authToken, currentUser, navigate, onLogout, onProductsChanged }
 
   // 🗑️ Eliminar producto
   const handleDeleteProduct = async (productId) => {
-    const product = products.find((item) => item.id === productId)
-    const isSeller = currentUser?.rol === "VENDEDOR"
-    const isOwner = product?.sellerId && currentUser?.id === product.sellerId
-
-    if (isSeller && !isOwner) {
-      toast.error("Solo puedes deshabilitar tus propios productos")
-      return
-    }
-
     if (!window.confirm("¿Deshabilitar este producto?")) return
 
     try {
@@ -167,62 +105,6 @@ function Admin({ authToken, currentUser, navigate, onLogout, onProductsChanged }
     }
   }
 
-  // ✅ Refrescar productos después de crear uno
-  const handleProductAdded = async () => {
-    await loadProducts()
-    if (onProductsChanged) {
-      await onProductsChanged()
-    }
-  }
-
-  const handleOpenEditProduct = (product) => {
-    const isOwner = currentUser?.id === product?.sellerId
-
-    if (!isSeller || !isOwner) {
-      toast.error("Solo puedes editar tus propios productos")
-      return
-    }
-
-    setSelectedProduct(product)
-    setIsEditProductModalOpen(true)
-  }
-
-  const handleProductUpdated = async () => {
-    await loadProducts()
-    if (onProductsChanged) {
-      await onProductsChanged()
-    }
-  }
-
-  const validTransitions = {
-    PENDIENTE: ["EN_CAMINO", "CANCELADA"],
-    EN_CAMINO: ["RECIBIDA", "CANCELADA"],
-    RECIBIDA: [],
-    CANCELADA: []
-  }
-
-  const handleChangeOrderState = async (orderId) => {
-    const order = sellerOrders.find((item) => item._id === orderId)
-    const targetState = selectedStates[orderId]
-
-    if (!order || !targetState || targetState === order.estado) {
-      return
-    }
-
-    try {
-      await updateOrderStatus({
-        orderId,
-        token: authToken,
-        newState: targetState,
-        comment: `Actualizado por vendedor ${currentUser?.nombre || ""}`
-      })
-
-      toast.success("Estado de orden actualizado")
-      await loadSellerOrders()
-    } catch (error) {
-      toast.error(error.message || "No se pudo actualizar la orden")
-    }
-  }
 
   const filteredUsers = users.filter((user) => {
     if (userRoleFilter === "TODOS") return true
@@ -255,17 +137,6 @@ function Admin({ authToken, currentUser, navigate, onLogout, onProductsChanged }
         >
           <Package className="h-5 w-5" /> Productos
         </button>
-
-        {isSeller && (
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition ${
-              activeTab === "orders" ? "bg-[#CB6045]" : "hover:bg-[#CB6045]"
-            }`}
-          >
-            <Truck className="h-5 w-5" /> Órdenes
-          </button>
-        )}
 
         {isAdmin && (
           <>
@@ -415,22 +286,11 @@ function Admin({ authToken, currentUser, navigate, onLogout, onProductsChanged }
           <div className="bg-white rounded-3xl shadow-md p-8">
             <h2 className="text-2xl font-bold mb-6 flex justify-between items-center">
               Gestión de Productos ({products.length})
-              {currentUser?.rol === "VENDEDOR" && (
-                <button
-                  onClick={() => setIsAddProductModalOpen(true)}
-                  className="flex items-center gap-2 bg-[#F57656] text-white px-4 py-2 rounded-xl hover:bg-[#CB6045] transition"
-                >
-                  <Plus className="h-4 w-4" />
-                  Agregar
-                </button>
-              )}
             </h2>
 
-            {currentUser?.rol === "ADMINISTRADOR" && (
-              <div className="bg-blue-50 p-4 rounded-lg mb-6 border-l-4 border-blue-500">
-                <p className="text-sm text-blue-700">Como administrador, puedes deshabilitar productos. Para crear nuevos productos, usa tu cuenta de vendedor.</p>
-              </div>
-            )}
+            <div className="bg-blue-50 p-4 rounded-lg mb-6 border-l-4 border-blue-500">
+              <p className="text-sm text-blue-700">Como administrador, puedes deshabilitar productos. La creación y edición se hace desde el panel de vendedor.</p>
+            </div>
 
             {productsLoading && <p className="text-gray-500">Cargando productos...</p>}
             {productsError && <p className="text-red-500">{productsError}</p>}
@@ -454,103 +314,17 @@ function Admin({ authToken, currentUser, navigate, onLogout, onProductsChanged }
                         )}
                       </div>
 
-                      {(() => {
-                        const isSeller = currentUser?.rol === "VENDEDOR"
-                        const isOwner = currentUser?.id === product.sellerId
-                        const canDisable = currentUser?.rol === "ADMINISTRADOR" || (isSeller && isOwner)
-                        const canEdit = isSeller && isOwner
-
-                        if (!canDisable && !canEdit) {
-                          return (
-                            <span className="text-xs text-gray-400">Solo propietario</span>
-                          )
-                        }
-
-                        return (
-                          <div className="flex items-center gap-2">
-                            {canEdit && (
-                              <button
-                                onClick={() => handleOpenEditProduct(product)}
-                                className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:scale-105 transition"
-                                title="Editar producto"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </button>
-                            )}
-
-                            {canDisable && (
-                              <button
-                                onClick={() => handleDeleteProduct(product.id)}
-                                className="p-2 bg-yellow-100 text-yellow-700 rounded-lg hover:scale-105 transition"
-                                title="Deshabilitar producto"
-                              >
-                                <UserX className="h-4 w-4" />
-                              </button>
-                            )}
-                          </div>
-                        )
-                      })()}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="p-2 bg-yellow-100 text-yellow-700 rounded-lg hover:scale-105 transition"
+                          title="Deshabilitar producto"
+                        >
+                          <UserX className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   ))
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ================= SELLER ORDERS ================= */}
-        {isSeller && activeTab === "orders" && (
-          <div className="bg-white rounded-3xl shadow-md p-8">
-            <h2 className="text-2xl font-bold mb-6">Órdenes de tus productos ({sellerOrders.length})</h2>
-
-            {sellerOrdersLoading && <p className="text-gray-500">Cargando órdenes...</p>}
-            {sellerOrdersError && <p className="text-red-500">{sellerOrdersError}</p>}
-
-            {!sellerOrdersLoading && !sellerOrdersError && (
-              <div className="space-y-4">
-                {sellerOrders.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">Aún no tienes órdenes asignadas</p>
-                ) : (
-                  sellerOrders.map((order) => {
-                    const allowedStates = validTransitions[order.estado] || []
-
-                    return (
-                      <div
-                        key={order._id}
-                        className="bg-[#FFF5F2] rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-                      >
-                        <div>
-                          <p className="font-semibold">Pedido #{order.numeroOrden || order._id}</p>
-                          <p className="text-sm text-gray-500">Estado actual: {order.estado}</p>
-                          <p className="text-sm text-gray-500">Total: ${Number(order?.totales?.total || 0).toFixed(2)}</p>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={selectedStates[order._id] || order.estado}
-                            onChange={(e) => setSelectedStates((prev) => ({
-                              ...prev,
-                              [order._id]: e.target.value
-                            }))}
-                            className="px-3 py-2 rounded-lg border border-gray-300 text-sm"
-                          >
-                            <option value={order.estado}>{order.estado}</option>
-                            {allowedStates.map((state) => (
-                              <option key={state} value={state}>{state}</option>
-                            ))}
-                          </select>
-
-                          <button
-                            onClick={() => handleChangeOrderState(order._id)}
-                            disabled={!allowedStates.includes(selectedStates[order._id])}
-                            className="px-3 py-2 rounded-lg bg-[#F57656] text-white text-sm font-semibold hover:bg-[#CB6045] disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Actualizar
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })
                 )}
               </div>
             )}
@@ -658,26 +432,6 @@ function Admin({ authToken, currentUser, navigate, onLogout, onProductsChanged }
 
       </div>
 
-      {/* MODAL AGREGAR PRODUCTO */}
-      <AddProductModal
-        isOpen={isAddProductModalOpen}
-        onClose={() => setIsAddProductModalOpen(false)}
-        onProductAdded={handleProductAdded}
-        authToken={authToken}
-        currentUser={currentUser}
-      />
-
-      <EditProductModal
-        isOpen={isEditProductModalOpen}
-        onClose={() => {
-          setIsEditProductModalOpen(false)
-          setSelectedProduct(null)
-        }}
-        product={selectedProduct}
-        authToken={authToken}
-        currentUser={currentUser}
-        onProductUpdated={handleProductUpdated}
-      />
     </div>
   )
 }

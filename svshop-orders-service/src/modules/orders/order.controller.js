@@ -202,15 +202,15 @@ const updateOrderStatus = async (req, res) => {
       return res.status(400).json({ message: 'La orden no tiene items para validar vendedor propietario' });
     }
 
-    const sellerOwnsAllItems = order.items.every(
+    const sellerHasItems = order.items.some(
       (item) => item.vendedorId && item.vendedorId.toString() === req.user.id
     );
 
-    if (!sellerOwnsAllItems) {
+    if (!sellerHasItems) {
       return res.status(403).json({ message: 'Solo el vendedor propietario de los productos puede actualizar esta orden' });
     }
 
-    const state = await orderService.updateOrderStatus(id, newState, comment);
+    const state = await orderService.updateOrderStatus(id, newState, comment, req.user.id);
     res.status(200).json(state);
   } catch (error) {
     const statusCode = error.statusCode || 400;

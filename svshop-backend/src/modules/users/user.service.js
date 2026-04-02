@@ -4,6 +4,7 @@
  */
 
 const User = require('./user.model');
+const Product = require('../products/product.model');
 
 const getAll = async (page = 1, limit = 10) => {
   const skip = (page - 1) * limit;
@@ -60,21 +61,27 @@ const update = async (userId, updateData, updatedByUserId) => {
   return user;
 };
 
-const remove = async (userId) => {
-  // Soft delete: solo marcar como inactivo
-  const user = await User.findByIdAndUpdate(
-    userId,
-    { activo: false },
-    { new: true }
-  ).select('-password');
+const remove = async (userId, updatedByUserId) => {
+  const user = await User.findById(userId);
   
   if (!user) {
     const error = new Error('Usuario no encontrado');
     error.statusCode = 404;
     throw error;
   }
-  
-  return user;
+
+  user.activo = false;
+  user.modificadoPor = updatedByUserId;
+  await user.save();
+
+  if (user.rol === 'VENDEDOR') {
+    await Product.updateMany(
+      { vendedor: userId, disponible: true },
+      { disponible: false, modificadoPor: updatedByUserId }
+    );
+  }
+
+  return User.findById(userId).select('-password');
 };
 
 module.exports = {

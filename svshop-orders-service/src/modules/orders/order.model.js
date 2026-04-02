@@ -80,6 +80,23 @@ const historialEstadoSchema = new Schema(
   { _id: false }
 );
 
+const estadoVendedorSchema = new Schema(
+  {
+    vendedorId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+    },
+    estado: {
+      type: String,
+      enum: ["PENDIENTE", "EN_CAMINO", "RECIBIDA", "CANCELADA"],
+      required: true,
+      default: "PENDIENTE",
+    },
+    historial: [historialEstadoSchema],
+  },
+  { _id: false }
+);
+
 const orderSchema = new Schema(
   {
     numeroOrden: {
@@ -109,6 +126,8 @@ const orderSchema = new Schema(
       enum: ["PENDIENTE", "EN_CAMINO", "RECIBIDA", "CANCELADA"],
       default: "PENDIENTE",
     },
+
+    estadosVendedor: [estadoVendedorSchema],
 
     historialEstados: [historialEstadoSchema],
 

@@ -24,11 +24,24 @@ const mapProduct = (product) => ({
   sellerName: product.vendedor?.nombre || product.sellerName || ""
 })
 
-export const getProducts = async ({ page = 1, limit = 20 } = {}) => {
+export const getProducts = async ({ page = 1, limit = 20, disponible, categoria, minPrecio, maxPrecio } = {}) => {
   const params = new URLSearchParams({
     page: String(page),
     limit: String(limit)
   })
+
+  if (disponible !== undefined) {
+    params.set("disponible", String(disponible))
+  }
+  if (categoria) {
+    params.set("categoria", categoria)
+  }
+  if (minPrecio !== undefined) {
+    params.set("minPrecio", String(minPrecio))
+  }
+  if (maxPrecio !== undefined) {
+    params.set("maxPrecio", String(maxPrecio))
+  }
 
   const response = await fetch(`${buildApiUrl("/products")}?${params.toString()}`)
 

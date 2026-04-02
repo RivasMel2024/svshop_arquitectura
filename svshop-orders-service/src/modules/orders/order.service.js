@@ -4,7 +4,21 @@ const States = require('../orders/orderStates')
 //Verifica los datos de la orden utilizando el modelo y la guarda a la BD
 const create = async (orderData) => {
     try{
-        const order = new Order(orderData)
+        const items = Array.isArray(orderData.items) ? orderData.items : []
+        const uniqueSellers = Array.from(
+          new Set(items.map((item) => String(item.vendedorId)))
+        ).filter(Boolean)
+
+        const estadosVendedor = uniqueSellers.map((sellerId) => ({
+          vendedorId: sellerId,
+          estado: "PENDIENTE",
+          historial: [{ estado: "PENDIENTE", comentario: "Orden creada" }]
+        }))
+
+        const order = new Order({
+          ...orderData,
+          estadosVendedor
+        })
 
         return await order.save()
     }
@@ -82,13 +96,6 @@ const getBySeller = async (sellerId, page = 1, limit = 10) => {
 
     const query = {
       'items.vendedorId': sellerId,
-      items: {
-        $not: {
-          $elemMatch: {
-            vendedorId: { $ne: sellerId }
-          }
-        }
-      }
     };
 
     const orders = await Order.find(query)
@@ -115,7 +122,7 @@ const getBySeller = async (sellerId, page = 1, limit = 10) => {
 
 
 //Actualiza el estado de una orden
-const updateOrderStatus = async (orderId, newState, comment) => {
+const updateOrderStatus = async (orderId, newState, comment, sellerId) => {
 
 
   try {
@@ -126,8 +133,26 @@ const updateOrderStatus = async (orderId, newState, comment) => {
         throw new Error("Orden no encontrada")
     }
 
+    if (!Array.isArray(order.estadosVendedor) || order.estadosVendedor.length === 0) {
+      const items = Array.isArray(order.items) ? order.items : []
+      const uniqueSellers = Array.from(new Set(items.map((item) => String(item.vendedorId)))).filter(Boolean)
+      order.estadosVendedor = uniqueSellers.map((id) => ({
+        vendedorId: id,
+        estado: order.estado || "PENDIENTE",
+        historial: [{ estado: order.estado || "PENDIENTE", comentario: "Estado inicial" }]
+      }))
+    }
+
+    const sellerState = order.estadosVendedor.find(
+      (entry) => String(entry.vendedorId) === String(sellerId)
+    )
+
+    if (!sellerState) {
+      throw new Error("El vendedor no tiene items en esta orden")
+    }
+
     //Recibe las transiciones de estado validas definidas en el objeto que esta en el archivo orderStates
-    const validStates = States.VALID_TRANSITIONS[order.estado] || [];
+    const validStates = States.VALID_TRANSITIONS[sellerState.estado] || [];
 
     //Valida que el nuevo estado sea una transición valida
     if (!validStates.includes(newState)) {
@@ -136,19 +161,28 @@ const updateOrderStatus = async (orderId, newState, comment) => {
 
 
     
-    const updatedOrder = await Order.findByIdAndUpdate(
-      orderId,
-      {
-        estado: newState,
-        $push: {
-          historialEstados: {
-            estado: newState,
-            comentario: comment
-          }
-        }
-      },
-      { new: true }
-    );
+    sellerState.estado = newState
+    sellerState.historial = sellerState.historial || []
+    sellerState.historial.push({ estado: newState, comentario: comment })
+
+    const allStates = order.estadosVendedor.map((entry) => entry.estado)
+
+    let overallState = "PENDIENTE"
+    if (allStates.includes("CANCELADA")) {
+      overallState = "CANCELADA"
+    } else if (allStates.every((state) => state === "RECIBIDA")) {
+      overallState = "RECIBIDA"
+    } else if (allStates.every((state) => state === "EN_CAMINO" || state === "RECIBIDA")) {
+      overallState = "EN_CAMINO"
+    } else {
+      overallState = "PENDIENTE"
+    }
+
+    order.estado = overallState
+    order.historialEstados = order.historialEstados || []
+    order.historialEstados.push({ estado: overallState, comentario: comment })
+
+    const updatedOrder = await order.save()
 
     if (!updatedOrder) {
       throw new Error("Order not found");

@@ -13,6 +13,9 @@ const { verifyToken } = require('../../middlewares/auth.middleware');
 // POST /api/invoices - Crear factura (desde checkout)
 router.post('/', verifyToken, invoiceController.createInvoice);
 
+// POST /api/invoices/internal/status - Actualizar estado de factura (uso interno)
+router.post('/internal/status', invoiceController.updateInvoiceStatusInternal);
+
 // GET /api/invoices/:id - Obtener factura por ID
 router.get('/:id', verifyToken, invoiceController.getInvoiceById);
 

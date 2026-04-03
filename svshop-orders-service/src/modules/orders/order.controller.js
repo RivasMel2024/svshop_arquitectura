@@ -36,6 +36,34 @@ const updateStockAfterCheckout = async ({ items, actorId }) => {
   return payload;
 };
 
+const updateInvoiceStatus = async ({ facturaId, estado }) => {
+  if (!config.MONOLITH_API_URL || !config.INTERNAL_API_KEY) {
+    return;
+  }
+
+  const baseUrl = String(config.MONOLITH_API_URL).replace(/\/+$/, '');
+  try {
+    const response = await fetch(`${baseUrl}/api/invoices/internal/status`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-key': config.INTERNAL_API_KEY
+      },
+      body: JSON.stringify({ facturaId, estado })
+    });
+
+    if (!response.ok) {
+      const raw = await response.text();
+      console.warn('No se pudo actualizar estado de factura', {
+        status: response.status,
+        body: raw
+      });
+    }
+  } catch (error) {
+    console.warn('Error llamando a actualización de factura', error.message);
+  }
+};
+
 
 //Crea una orden nueva
 const createOrder = async (req, res) => {
@@ -211,6 +239,15 @@ const updateOrderStatus = async (req, res) => {
     }
 
     const state = await orderService.updateOrderStatus(id, newState, comment, req.user.id);
+
+    const targetEstado = state?.estado;
+    if (state?.facturaId && (targetEstado === 'RECIBIDA' || targetEstado === 'CANCELADA')) {
+      updateInvoiceStatus({
+        facturaId: state.facturaId,
+        estado: targetEstado === 'RECIBIDA' ? 'PAGADA' : 'CANCELADA'
+      }).catch(() => {});
+    }
+
     res.status(200).json(state);
   } catch (error) {
     const statusCode = error.statusCode || 400;

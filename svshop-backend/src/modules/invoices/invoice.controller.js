@@ -5,6 +5,7 @@
 
 
 const invoiceService = require('./invoice.service');
+const config = require('../../config/config');
 
 const createInvoice = async (req, res) => {
   try {
@@ -79,8 +80,29 @@ const getUserInvoices = async (req, res) => {
   }
 };
 
+const updateInvoiceStatusInternal = async (req, res) => {
+  try {
+    const internalKey = req.headers['x-internal-key'];
+    if (!config.INTERNAL_API_KEY || internalKey !== config.INTERNAL_API_KEY) {
+      return res.status(401).json({ message: 'No autorizado para operación interna' });
+    }
+
+    const { facturaId, estado } = req.body || {};
+    if (!facturaId || !estado) {
+      return res.status(400).json({ message: 'facturaId y estado son requeridos' });
+    }
+
+    const updated = await invoiceService.updateStatus(facturaId, estado);
+    res.status(200).json({ message: 'Estado de factura actualizado', invoice: updated });
+  } catch (error) {
+    const statusCode = error.statusCode || 400;
+    res.status(statusCode).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createInvoice,
   getInvoiceById,
-  getUserInvoices
+  getUserInvoices,
+  updateInvoiceStatusInternal
 };

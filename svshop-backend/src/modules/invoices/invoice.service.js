@@ -89,8 +89,23 @@ const getByUser = async (userId, page = 1, limit = 10) => {
   };
 }
 
+const updateStatus = async (invoiceId, estado) => {
+  const invoice = await Invoice.findByIdAndUpdate(
+    invoiceId,
+    { estado },
+    { new: true, runValidators: true }
+  );
+
+  if (!invoice) {
+    throw new Error('Invoice not found');
+  }
+
+  return invoice;
+}
+
 module.exports = {
   create,
   getById,
-  getByUser
+  getByUser,
+  updateStatus
 };

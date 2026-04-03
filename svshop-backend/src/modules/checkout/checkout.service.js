@@ -34,13 +34,14 @@ const processCheckout = async (userId, checkoutData, token) => {
     throw createError('El carrito está vacío', 400);
   }
 
-  const { tipoDocumento, datosFacturación } = checkoutData;
+  const datosFacturacion = checkoutData.datosFacturacion || checkoutData["datosFacturación"];
+  const { tipoDocumento } = checkoutData;
 
   // Validar datos requeridos
   if (!tipoDocumento) {
     throw createError('tipoDocumento es requerido', 400);
   }
-  if (!datosFacturación) {
+  if (!datosFacturacion) {
     throw createError('datosFacturación es requerido', 400);
   }
 
@@ -69,7 +70,7 @@ const processCheckout = async (userId, checkoutData, token) => {
       subtotal: subTotal,
       iva: subTotal * IVA,
       total: total,
-      datosFacturacion: datosFacturación
+      datosFacturacion: datosFacturacion
     });
   } catch (error) {
     throw createError(`Error creando invoice: ${error.message}`, 500);
@@ -105,10 +106,10 @@ const processCheckout = async (userId, checkoutData, token) => {
           total
         },
         direccionEnvio: {
-          calle: datosFacturación.direccion || 'No especificada',
-          ciudad: datosFacturación.ciudad || 'No especificada',
-          departamento: datosFacturación.departamento || 'No especificado',
-          telefono: datosFacturación.telefono || 'No especificado'
+          calle: datosFacturacion.direccion || 'No especificada',
+          ciudad: datosFacturacion.ciudad || 'No especificada',
+          departamento: datosFacturacion.departamento || 'No especificado',
+          telefono: datosFacturacion.telefono || 'No especificado'
         },
         metodoEnvio: {
           tipo: 'ESTANDAR',

@@ -15,6 +15,13 @@ function Checkout({ cartItems = [], navigate, clearCart, authToken = "", current
     numeroTarjeta: "",
     fechaVencimiento: "",
     cvc: "",
+    tipoDocumento: "CONSUMIDOR_FINAL",
+    facturacionNombre: "",
+    facturacionNit: "",
+    facturacionDireccion: "",
+    facturacionTelefono: "",
+    facturacionCiudad: "",
+    facturacionDepartamento: "",
   })
 
   const subtotal = cartItems.reduce(
@@ -64,16 +71,46 @@ function Checkout({ cartItems = [], navigate, clearCart, authToken = "", current
       return
     }
 
+    if (formData.tipoDocumento === "CREDITO_FISCAL") {
+      if (
+        !formData.facturacionNombre ||
+        !formData.facturacionNit ||
+        !formData.facturacionDireccion ||
+        !formData.facturacionTelefono ||
+        !formData.facturacionCiudad ||
+        !formData.facturacionDepartamento
+      ) {
+        toast.error("Completa los datos de crédito fiscal")
+        return
+      }
+    }
+
     setIsProcessing(true)
 
     try {
       // Llamar al API para crear la orden
+      const datosFacturacion = formData.tipoDocumento === "CREDITO_FISCAL"
+        ? {
+            nombre: formData.facturacionNombre,
+            nit: formData.facturacionNit,
+            direccion: formData.facturacionDireccion,
+            telefono: formData.facturacionTelefono,
+            ciudad: formData.facturacionCiudad,
+            departamento: formData.facturacionDepartamento,
+          }
+        : {
+            nombre: `${formData.nombre} ${formData.apellidos}`.trim(),
+            nit: "",
+            direccion: formData.direccion,
+            telefono: formData.telefono,
+            ciudad: formData.ciudad,
+            departamento: formData.codigoPostal,
+          }
+
       const order = await createOrder({
-        cartItems,
-        total,
-        subtotal,
         token: authToken,
-        shippingData: formData,
+        tipoDocumento: formData.tipoDocumento,
+        datosFacturacion,
       })
 
       // Indicar éxito
@@ -150,6 +187,36 @@ function Checkout({ cartItems = [], navigate, clearCart, authToken = "", current
                   />
                 </div>
 
+                <div className="mt-5">
+                  <label className="block text-sm font-semibold text-[#A04A34] mb-2">
+                    Tipo de documento
+                  </label>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, tipoDocumento: "CONSUMIDOR_FINAL" }))}
+                      className={`px-4 py-2 rounded-xl border ${
+                        formData.tipoDocumento === "CONSUMIDOR_FINAL"
+                          ? "bg-white border-[#F57656] text-[#F57656]"
+                          : "bg-white/70 border-transparent text-[#5F6362]"
+                      }`}
+                    >
+                      Consumidor final
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, tipoDocumento: "CREDITO_FISCAL" }))}
+                      className={`px-4 py-2 rounded-xl border ${
+                        formData.tipoDocumento === "CREDITO_FISCAL"
+                          ? "bg-white border-[#F57656] text-[#F57656]"
+                          : "bg-white/70 border-transparent text-[#5F6362]"
+                      }`}
+                    >
+                      Crédito fiscal
+                    </button>
+                  </div>
+                </div>
+
                 <input
                   required
                   placeholder="Dirección completa"
@@ -186,6 +253,67 @@ function Checkout({ cartItems = [], navigate, clearCart, authToken = "", current
                   onChange={handleInputChange}
                   className={`${inputStyle} mt-5`}
                 />
+
+                {formData.tipoDocumento === "CREDITO_FISCAL" && (
+                  <div className="mt-6 space-y-5">
+                    <h3 className="text-lg font-semibold text-[#A04A34]">Datos de crédito fiscal</h3>
+
+                    <input
+                      required
+                      placeholder="Nombre o razón social"
+                      name="facturacionNombre"
+                      value={formData.facturacionNombre}
+                      onChange={handleInputChange}
+                      className={inputStyle}
+                    />
+
+                    <input
+                      required
+                      placeholder="NIT"
+                      name="facturacionNit"
+                      value={formData.facturacionNit}
+                      onChange={handleInputChange}
+                      className={inputStyle}
+                    />
+
+                    <input
+                      required
+                      placeholder="Dirección fiscal"
+                      name="facturacionDireccion"
+                      value={formData.facturacionDireccion}
+                      onChange={handleInputChange}
+                      className={inputStyle}
+                    />
+
+                    <div className="grid grid-cols-2 gap-5">
+                      <input
+                        required
+                        placeholder="Ciudad"
+                        name="facturacionCiudad"
+                        value={formData.facturacionCiudad}
+                        onChange={handleInputChange}
+                        className={inputStyle}
+                      />
+                      <input
+                        required
+                        placeholder="Departamento"
+                        name="facturacionDepartamento"
+                        value={formData.facturacionDepartamento}
+                        onChange={handleInputChange}
+                        className={inputStyle}
+                      />
+                    </div>
+
+                    <input
+                      required
+                      placeholder="Teléfono"
+                      name="facturacionTelefono"
+                      value={formData.facturacionTelefono}
+                      onChange={handleInputChange}
+                      className={inputStyle}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* PAGO */}

@@ -19,6 +19,13 @@ import ForgotPassword from "./pages/ForgotPassword"
 import { getProducts } from "./services/products.api"
 import { getMyProfile, loginUser, registerUser } from "./services/auth.api"
 import { getOrdersByUser } from "./services/orders.api"
+import {
+  addCartItem,
+  clearCart as clearCartApi,
+  getCart,
+  removeCartItem,
+  updateCartItem
+} from "./services/cart.api"
 
 const TOKEN_KEY = "svshop_token"
 const USER_KEY = "svshop_user"
@@ -143,6 +150,24 @@ function App() {
     loadOrders()
   }, [authToken, currentUser?.id])
 
+  useEffect(() => {
+    const loadCart = async () => {
+      if (!authToken) {
+        setCartItems([])
+        return
+      }
+
+      try {
+        const serverCart = await getCart(authToken)
+        setCartItems(serverCart)
+      } catch (error) {
+        console.error("Error cargando carrito:", error)
+      }
+    }
+
+    loadCart()
+  }, [authToken])
+
   // 🔹 Navegación protegida
   const navigate = (route, payload = null) => {
     const protectedRoutes = ["cart", "checkout", "account"]
@@ -237,21 +262,14 @@ function App() {
       return
     }
 
-    const existing = cartItems.find((item) => item.id === product.id)
-
-    if (existing) {
-      setCartItems(
-        cartItems.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        )
-      )
-    } else {
-      setCartItems([...cartItems, { ...product, quantity: 1 }])
-    }
-
-    toast.success("Producto agregado 🛒")
+    addCartItem({ productId: product.id, cantidad: 1 }, authToken)
+      .then((serverCart) => {
+        setCartItems(serverCart)
+        toast.success("Producto agregado 🛒")
+      })
+      .catch((error) => {
+        toast.error(error.message || "No se pudo agregar al carrito")
+      })
   }
 
   // 🔹 Actualizar cantidad
@@ -261,20 +279,34 @@ function App() {
       return
     }
 
-    setCartItems(
-      cartItems.map((item) =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    )
+    updateCartItem({ productId: id, cantidad: newQuantity }, authToken)
+      .then((serverCart) => {
+        setCartItems(serverCart)
+      })
+      .catch((error) => {
+        toast.error(error.message || "No se pudo actualizar el carrito")
+      })
   }
 
   const removeItem = (id) => {
-    setCartItems(cartItems.filter((item) => item.id !== id))
-    toast.success("Producto eliminado")
+    removeCartItem({ productId: id }, authToken)
+      .then((serverCart) => {
+        setCartItems(serverCart)
+        toast.success("Producto eliminado")
+      })
+      .catch((error) => {
+        toast.error(error.message || "No se pudo eliminar el producto")
+      })
   }
 
   const clearCart = () => {
-    setCartItems([])
+    clearCartApi(authToken)
+      .then(() => {
+        setCartItems([])
+      })
+      .catch((error) => {
+        toast.error(error.message || "No se pudo vaciar el carrito")
+      })
   }
 
   // 🔹 Refrescar órdenes después de crear una

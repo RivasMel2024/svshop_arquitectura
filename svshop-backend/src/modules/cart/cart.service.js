@@ -8,13 +8,14 @@ const Product = require('../products/product.model');
 
 const getUserCart = async (userId) => {
   let cart = await Cart.findOne({ usuario: userId })
-    .populate('items.producto', 'nombre imagen precio disponible')
+    .populate('items.producto', 'nombre imagen precio disponible vendedor')
     .exec();
 
   if (!cart) {
     cart = await Cart.create({ usuario: userId, items: [], total: 0 });
   }
 
+  await cart.populate('items.producto', 'nombre imagen precio disponible vendedor');
   return cart;
 };
 
@@ -61,7 +62,8 @@ const addProductToCart = async (userId, productId, cantidad) => {
   }
 
   await cart.save();
-  return cart.populate('items.producto', 'nombre imagen precio disponible');
+  await cart.populate('items.producto', 'nombre imagen precio disponible vendedor');
+  return cart;
 };
 
 const updateCartItem = async (userId, productId, cantidad) => {
@@ -97,7 +99,8 @@ const updateCartItem = async (userId, productId, cantidad) => {
   cart.items[itemIndex].precioUnitario = product.precio;
 
   await cart.save();
-  return cart.populate('items.producto', 'nombre imagen precio disponible');
+  await cart.populate('items.producto', 'nombre imagen precio disponible vendedor');
+  return cart;
 };
 
 const removeProductFromCart = async (userId, productId) => {
@@ -112,7 +115,8 @@ const removeProductFromCart = async (userId, productId) => {
   );
 
   await cart.save();
-  return cart.populate('items.producto', 'nombre imagen precio disponible');
+  await cart.populate('items.producto', 'nombre imagen precio disponible vendedor');
+  return cart;
 };
 
 const clearUserCart = async (userId) => {

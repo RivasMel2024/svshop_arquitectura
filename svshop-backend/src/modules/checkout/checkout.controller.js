@@ -18,13 +18,14 @@ const processCheckout = async (req, res) => {
     }
 
     const userId = req.user.id;
-    const { tipoDocumento, datosFacturación } = req.body;
+    const { tipoDocumento, datosFacturación, datosFacturacion } = req.body;
+    const billingData = datosFacturación || datosFacturacion;
 
     // Validar entrada
     if (!tipoDocumento) {
       return res.status(400).json({ message: 'tipoDocumento es requerido' });
     }
-    if (!datosFacturación) {
+    if (!billingData) {
       return res.status(400).json({ message: 'datosFacturación es requerido' });
     }
 
@@ -38,7 +39,7 @@ const processCheckout = async (req, res) => {
     // Procesar checkout
     const result = await checkoutService.processCheckout(
       userId,
-      { tipoDocumento, datosFacturación },
+      { tipoDocumento, datosFacturacion: billingData },
       token
     );
 

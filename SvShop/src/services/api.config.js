@@ -1,4 +1,4 @@
-const rawBaseUrl = (import.meta.env.VITE_API_URL || "http://localhost:8080").trim()
+const rawBaseUrl = (import.meta.env.VITE_API_URL || "http://localhost:3000").trim()
 
 const withoutTrailingSlash = rawBaseUrl.replace(/\/+$/, "")
 const normalizedBaseUrl = withoutTrailingSlash.endsWith("/api")

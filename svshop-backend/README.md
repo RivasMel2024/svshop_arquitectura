@@ -116,14 +116,3 @@ Colecciones:
 - `carts`
 - `invoices`
 
-## Próximos Pasos
-
-- [ ] Implementar lógica de negocio en servicios
-- [ ] Agregar validación de DTOs
-- [ ] Implementar tests unitarios
-- [ ] Configurar CI/CD
-- [ ] Agregar documentación de API (Swagger)
-
-## Equipo
-
-Ver README.md principal del proyecto para división de trabajo.
